@@ -1,7 +1,14 @@
+
+
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Search, Menu, User, LogOut, ChevronRight, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, Landmark, Mail, BookOpen, Beaker, Home, GraduationCap, Filter, Stamp, Download, MoreHorizontal, Plus, Save, ToggleLeft, ToggleRight, Check, X, Info, ShieldAlert
 } from 'lucide-react';
+
+
+
 
 // --- 1. CONSTANTS & REAL-WORLD DATA ---
 
@@ -215,7 +222,29 @@ const Button = ({ children, variant = 'primary', className = '', onClick, disabl
     danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100",
     ghost: "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
   };
+
+
+
+
   return (
+
+    import React from "react";
+
+function App() {
+  return (
+    <div>
+      <header className="p-4 flex items-center gap-3 shadow">
+        <img src="/uniLogo.png" alt="Logo" className="h-12 w-auto" />
+        <h1 className="text-xl font-bold">University Clearance System</h1>
+      </header>
+
+      {/* Your other pages/components below */}
+    </div>
+  );
+}
+
+export default App;
+
     <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
       {Icon && <Icon size={16} />}
       {children}
