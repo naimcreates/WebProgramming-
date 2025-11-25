@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Search, Menu, User, LogOut, ChevronRight, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, Landmark, Mail, BookOpen, Beaker, Home, GraduationCap, Filter, Stamp, Download, MoreHorizontal, Plus, Save, ToggleLeft, ToggleRight, Check, X, Info, ShieldAlert
@@ -227,24 +223,6 @@ const Button = ({ children, variant = 'primary', className = '', onClick, disabl
 
 
   return (
-
-    import React from "react";
-
-function App() {
-  return (
-    <div>
-      <header className="p-4 flex items-center gap-3 shadow">
-        <img src="/uniLogo.png" alt="Logo" className="h-12 w-auto" />
-        <h1 className="text-xl font-bold">University Clearance System</h1>
-      </header>
-
-      {/* Your other pages/components below */}
-    </div>
-  );
-}
-
-export default App;
-
     <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
       {Icon && <Icon size={16} />}
       {children}
@@ -899,8 +877,9 @@ export default function UniversityClearanceSystem() {
         {/* Sidebar */}
         <aside className={`fixed md:static inset-y-0 left-0 z-30 bg-white border-r transition-all duration-300 flex flex-col h-full ${isSidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full w-64 md:w-20 md:translate-x-0'}`}>
             <div className="p-6 border-b h-20 flex items-center gap-3 font-bold text-xl text-emerald-700 overflow-hidden whitespace-nowrap">
-                <div className="w-8 h-8 bg-emerald-600 rounded text-white flex items-center justify-center flex-shrink-0">U</div>
-                {isSidebarOpen && "UCS"}
+                <img src="/uniLogo.png" className="w-8 h-8 flex-shrink-0" alt="Logo" />
+{isSidebarOpen && <span>UCS</span>}
+
             </div>
             <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
                 {menuItems[role].map((item) => (
