@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Search, Menu, User, LogOut, ChevronRight, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, Landmark, Mail, BookOpen, Beaker, Home, GraduationCap, Filter, Stamp, Download, MoreHorizontal, Plus, Save, ToggleLeft, ToggleRight, Check, X, Info, ShieldAlert, Edit2, ShieldCheck, ChevronLeft, Shield, Award
+  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin
 } from 'lucide-react';
 
 // --- 1. CONSTANTS & REAL-WORLD DATA ---
 
 const SYSTEM_DATE = "Nov 27, 2025";
 
-// Initial Database State
+// Initial User Data
 const INITIAL_USERS = [
     { 
         id: 1, 
@@ -19,16 +19,16 @@ const INITIAL_USERS = [
         dept: 'Computer Science',
         batch: '223', 
         semester: '8th (Final)',
-        phone: '+1 (555) 012-3456'
+        phone: '+1 (555) 012-3456',
+        address: '123 Campus Dorm, Block B'
     },
-    { id: 2, name: 'Sarah Jenkins', role: 'Officer', email: 'sarah.j@uni.edu', status: 'Active' },
-    { id: 3, name: 'Dr. Al-Fayed', role: 'Admin', email: 'admin@uni.edu', status: 'Active' },
-    { id: 4, name: 'Jamie Doe', role: 'Student', email: 'jamie.d@uni.edu', status: 'Active', studentId: '0112230670', dept: 'EEE', batch: '231', semester: '6th' },
-    { id: 5, name: 'Jordan Smith', role: 'Student', email: 'jordan.s@uni.edu', status: 'Active', studentId: '0112420876', dept: 'BBA', batch: '232', semester: '4th' },
+    { id: 2, name: 'Sarah Jenkins', role: 'Officer', email: 'sarah.j@uni.edu', status: 'Active', phone: '+1 (555) 987-6543', dept: 'Registrar Office' },
+    { id: 3, name: 'Dr. Al-Fayed', role: 'Admin', email: 'admin@uni.edu', status: 'Active', phone: '+1 (555) 000-1111' },
+    { id: 4, name: 'Jamie Doe', role: 'Student', email: 'jamie.d@uni.edu', status: 'Active', studentId: '0112230670', dept: 'EEE', batch: '231', semester: '6th', phone: '+1 (555) 222-3333' },
+    { id: 5, name: 'Jordan Smith', role: 'Student', email: 'jordan.s@uni.edu', status: 'Active', studentId: '0112420876', dept: 'BBA', batch: '232', semester: '4th', phone: '+1 (555) 444-5555' },
 ];
 
 const INITIAL_DATABASE = [
-  // Student: Alex Thompson (0112230676)
   { 
     id: 1, 
     studentId: '0112230676',
@@ -115,7 +115,6 @@ const INITIAL_DATABASE = [
       { label: 'Verification of All Signatures', status: 'Pending' }
     ]
   },
-  // Other students data...
   { 
     id: 6, 
     studentId: '0112230670',
@@ -162,7 +161,7 @@ const getInitials = (name) => name ? name.split(' ').map(n => n[0]).join('').sub
 const Button = ({ children, variant = 'primary', className = '', onClick, disabled, icon: Icon }) => {
   const baseStyle = "px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer";
   const variants = {
-    primary: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200",
+    primary: "bg-blue-700 text-white hover:bg-blue-800 shadow-lg shadow-blue-200", 
     secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50",
     danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100",
     ghost: "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
@@ -187,20 +186,20 @@ const Card = ({ children, className = '', noPadding = false, onClick }) => (
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    Approved: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Confirmed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    Approved: "bg-emerald-100 text-emerald-700 border-emerald-200", 
+    Confirmed: "bg-blue-100 text-blue-700 border-blue-200", 
     Passed: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Active: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    Active: "bg-blue-100 text-blue-700 border-blue-200",
     Cleared: "bg-emerald-100 text-emerald-700 border-emerald-200",
     Pending: "bg-amber-100 text-amber-700 border-amber-200",
     Rejected: "bg-rose-100 text-rose-700 border-rose-200",
     Declined: "bg-rose-100 text-rose-700 border-rose-200",
-    Reviewing: "bg-blue-100 text-blue-700 border-blue-200",
-    Submitted: "bg-blue-100 text-blue-700 border-blue-200",
+    Reviewing: "bg-indigo-100 text-indigo-700 border-indigo-200",
+    Submitted: "bg-indigo-100 text-indigo-700 border-indigo-200",
   };
   const safeStyle = styles[status] || styles.Pending;
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border flex items-center gap-1.5 w-fit ${safeStyle}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border flex items-center gap-1.5 w-fit whitespace-nowrap ${safeStyle}`}>
       {status === 'Approved' || status === 'Confirmed' || status === 'Cleared' || status === 'Active' ? <CheckCircle size={14} /> : <Clock size={14} />}
       {status}
     </span>
@@ -222,13 +221,82 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   );
 };
 
-// --- 4. STUDENT MODULES ---
+// --- 4. VIEW COMPONENTS ---
+
+const ProfileView = ({ user }) => {
+    return (
+        <div className="animate-in fade-in space-y-6">
+            <div className="bg-gradient-to-r from-blue-800 to-indigo-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32 blur-3xl"></div>
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                    <div className="w-24 h-24 bg-white/20 backdrop-blur rounded-full flex items-center justify-center text-3xl font-bold border-4 border-white/30 shadow-lg">
+                        {getInitials(user.name)}
+                    </div>
+                    <div className="text-center md:text-left space-y-2">
+                        <h2 className="text-3xl font-bold tracking-tight">{user.name}</h2>
+                        <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm flex items-center gap-2"><User size={16}/> {user.role}</span>
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm flex items-center gap-2"><CheckCircle size={16}/> {user.status}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="p-6">
+                    <h3 className="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-2">Personal Information</h3>
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Mail size={20}/></div>
+                            <div><p className="text-xs text-slate-500 uppercase font-bold">Email Address</p><p className="font-medium text-slate-800">{user.email}</p></div>
+                        </div>
+                        <div className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Phone size={20}/></div>
+                            <div><p className="text-xs text-slate-500 uppercase font-bold">Phone Number</p><p className="font-medium text-slate-800">{user.phone || 'Not Provided'}</p></div>
+                        </div>
+                        {user.role === 'Student' && (
+                            <div className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><MapPin size={20}/></div>
+                                <div><p className="text-xs text-slate-500 uppercase font-bold">Address</p><p className="font-medium text-slate-800">{user.address || 'N/A'}</p></div>
+                            </div>
+                        )}
+                    </div>
+                </Card>
+
+                {user.role === 'Student' && (
+                    <Card className="p-6">
+                        <h3 className="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-2">Academic Details</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Hash size={20}/></div>
+                                <div><p className="text-xs text-slate-500 uppercase font-bold">Student ID</p><p className="font-medium text-slate-800 font-mono">{user.studentId}</p></div>
+                            </div>
+                            <div className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><BookOpen size={20}/></div>
+                                <div><p className="text-xs text-slate-500 uppercase font-bold">Department</p><p className="font-medium text-slate-800">{user.dept}</p></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Users size={20}/></div>
+                                    <div><p className="text-xs text-slate-500 uppercase font-bold">Batch</p><p className="font-medium text-slate-800">{user.batch}</p></div>
+                                </div>
+                                <div className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Clock size={20}/></div>
+                                    <div><p className="text-xs text-slate-500 uppercase font-bold">Semester</p><p className="font-medium text-slate-800">{user.semester}</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem, onNavigate, addNotification }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(null);
   const [uploading, setUploading] = useState(null);
 
-  // Filter items for the CURRENT logged in student (studentProfile.studentId)
   const myItems = useMemo(() => clearanceItems.filter(item => item.studentId === studentProfile.studentId), [clearanceItems, studentProfile]);
   
   const progress = myItems.length > 0 ? Math.round((myItems.filter(i => i.status === 'Approved').length / myItems.length) * 100) : 0;
@@ -279,41 +347,55 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
     }
   };
 
-  const circleSize = 192;
+  const baseSize = 192; 
   const strokeWidth = 12;
-  const center = circleSize / 2;
-  const radius = (circleSize - strokeWidth) / 2;
+  const center = baseSize / 2;
+  const radius = (baseSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
   return (
     <div className="space-y-8 animate-in fade-in">
-      {/* Hero Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="col-span-2 p-6 bg-gradient-to-br from-emerald-950 to-teal-900 text-white border-none relative overflow-hidden group hover:shadow-2xl hover:scale-[1.01]">
-          {/* Mobile Fix: Adjusted flex-col and spacing for better visibility on small screens */}
+        <Card className="col-span-2 p-6 bg-gradient-to-br from-blue-900 to-indigo-900 text-white border-none relative overflow-hidden group hover:shadow-2xl hover:scale-[1.01]">
           <div className="flex flex-col md:flex-row justify-between items-center relative z-10 gap-8">
             <div className="flex-1 w-full">
               <div className="flex items-center gap-3 mb-2">
                  <h2 className="text-2xl font-bold">{studentProfile.name}</h2>
                  <span className="bg-white/20 px-2 py-0.5 rounded text-xs font-mono">{studentProfile.studentId}</span>
               </div>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm text-emerald-100 mb-6">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm text-blue-100 mb-6">
                  <div><span className="block text-xs opacity-50 uppercase">Department</span>{studentProfile.dept || 'N/A'}</div>
                  <div><span className="block text-xs opacity-50 uppercase">Batch</span>{studentProfile.batch || 'N/A'}</div>
                  <div><span className="block text-xs opacity-50 uppercase">Semester</span>{studentProfile.semester || 'N/A'}</div>
-                 <div><span className="block text-xs opacity-50 uppercase">Status</span><span className="text-emerald-300 font-bold">Active</span></div>
-                 <div className="col-span-2 mt-2 pt-2 border-t border-white/10 flex justify-between items-center">
-                    <span className="block text-xs opacity-50 uppercase">Clearance Status</span>
+                 <div><span className="block text-xs opacity-50 uppercase">Status</span><span className="text-blue-300 font-bold">Active</span></div>
+                 
+                 <div className="col-span-2 mt-4 pt-4 border-t border-white/10">
                     {isCleared ? (
-                        <span className="text-emerald-300 font-bold flex items-center gap-2 bg-emerald-500/20 px-3 py-1 rounded-full"><CheckCircle size={14} /> Dues Cleared</span>
+                        <div className="flex items-center gap-2 text-emerald-300 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20">
+                            <CheckCircle size={20} />
+                            <span className="font-bold uppercase tracking-wide">All Dues Cleared</span>
+                        </div>
                     ) : (
-                        <span className="text-amber-300 font-bold flex items-center gap-2 bg-amber-500/20 px-3 py-1 rounded-full">
-                           {totalDue > 0 ? <><AlertCircle size={14} /> Dues: TK {totalDue.toFixed(2)}</> : <><Clock size={14} /> In Progress</>}
-                        </span>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                           <span className="text-xs opacity-50 uppercase">Financial Status</span>
+                           {totalDue > 0 ? (
+                               <div className="flex items-center gap-3 text-amber-300 bg-amber-500/20 px-4 py-2 rounded-xl border border-amber-500/30 animate-pulse-slow">
+                                   <AlertCircle size={24} />
+                                   <div>
+                                       <span className="text-[10px] uppercase font-bold opacity-80 block leading-tight">Total Payable</span>
+                                       <span className="text-xl font-extrabold tracking-tight">TK {totalDue.toFixed(2)}</span>
+                                   </div>
+                               </div>
+                           ) : (
+                               <span className="text-blue-300 font-bold flex items-center gap-2 bg-blue-500/20 px-3 py-1 rounded-full text-xs">
+                                   <Clock size={14} /> In Progress
+                               </span>
+                           )}
+                        </div>
                     )}
                  </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 mt-4">
                 <Button onClick={() => onNavigate('appointments')} variant="secondary" className="bg-white/10 border-white/10 text-white hover:bg-white/20">
                   <Calendar size={16} /> Book Appointment
                 </Button>
@@ -323,25 +405,27 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
               </div>
             </div>
             
-            {/* Mobile Fix: Removed 'hidden' class, added margin top for mobile spacing */}
             <div className="relative flex-shrink-0 mt-6 md:mt-0">
-              <svg width={circleSize} height={circleSize} className="transform -rotate-90">
+              <svg viewBox={`0 0 ${baseSize} ${baseSize}`} className="transform -rotate-90 w-32 h-32 md:w-48 md:h-48 transition-all duration-300">
                 <defs>
-                    <linearGradient id="betterGreenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#34d399" />
-                        <stop offset="50%" stopColor="#10b981" />
-                        <stop offset="100%" stopColor="#047857" />
+                    <linearGradient id="royalBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#60a5fa" /> 
+                        <stop offset="50%" stopColor="#3b82f6" /> 
+                        <stop offset="100%" stopColor="#2563eb" /> 
                     </linearGradient>
                 </defs>
-                <circle cx={center} cy={center} r={radius} stroke="currentColor" strokeWidth={strokeWidth} fill="transparent" className="text-emerald-900/50" />
-                <circle cx={center} cy={center} r={radius} stroke="url(#betterGreenGradient)" strokeWidth={strokeWidth} fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - (circumference * progress) / 100} className="transition-all duration-1000 ease-out" strokeLinecap="round"/>
+                <circle cx={center} cy={center} r={radius} stroke="currentColor" strokeWidth={strokeWidth} fill="transparent" className="text-white/10" />
+                <circle cx={center} cy={center} r={radius} stroke="url(#royalBlueGradient)" strokeWidth={strokeWidth} fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - (circumference * progress) / 100} className="transition-all duration-1000 ease-out" strokeLinecap="round"/>
               </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-4xl font-bold">{progress}%</span><span className="text-xs uppercase tracking-wider text-emerald-400">Cleared</span></div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl md:text-4xl font-bold transition-all duration-300 text-white">{progress}%</span>
+                  <span className="text-[10px] md:text-xs uppercase tracking-wider text-blue-200">Cleared</span>
+              </div>
             </div>
           </div>
         </Card>
-        <Card className="p-6 flex flex-col justify-center items-center text-center bg-white border-emerald-100 hover:border-emerald-300">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-full flex items-center justify-center mb-4 text-emerald-600 shadow-inner"><GraduationCap size={32} /></div>
+        <Card className="p-6 flex flex-col justify-center items-center text-center bg-white border-blue-100 hover:border-blue-300">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-4 text-blue-600 shadow-inner"><GraduationCap size={32} /></div>
           <h3 className="text-lg font-bold text-slate-800">Final Clearance</h3>
           <p className="text-sm text-slate-500 mt-2 mb-4">Certificate available upon 100% completion.</p>
           <Button disabled={progress < 100} onClick={() => onNavigate('certificate')} className="w-full">
@@ -350,7 +434,6 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
         </Card>
       </div>
 
-      {/* Clearance Grid */}
       <div>
         <h3 className="text-xl font-bold text-slate-800 mb-4 px-1">Clearance Modules</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -393,7 +476,6 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
         </div>
       </div>
 
-      {/* Payment Modal */}
       <Modal isOpen={!!showPaymentModal} onClose={() => setShowPaymentModal(null)} title="Secure Payment Gateway">
         {showPaymentModal && (
           <div className="space-y-6">
@@ -402,7 +484,7 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
               <div className="text-right"><span className="block text-slate-500 text-xs uppercase">For</span><span className="font-medium text-slate-800 bg-white px-3 py-1 rounded border border-slate-200">{showPaymentModal.unit}</span></div>
             </div>
             <div className="text-xs text-center text-slate-400">Encrypted Transaction • 256-bit SSL</div>
-            <Button onClick={() => handlePay(showPaymentModal.id)} className="w-full h-12 text-base shadow-xl shadow-emerald-100">Confirm Payment</Button>
+            <Button onClick={() => handlePay(showPaymentModal.id)} className="w-full h-12 text-base shadow-xl shadow-blue-100">Confirm Payment</Button>
           </div>
         )}
       </Modal>
@@ -428,7 +510,6 @@ const GuidelinesView = () => {
             <li>Ensure your library account status is marked as 'Active' or 'Closed' by the librarian.</li>
           </ul>
         </Card>
-        {/* Other guidelines */}
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><CreditCard size={20}/></div>
@@ -473,7 +554,6 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
   const [booked, setBooked] = useState(false);
   const [unit, setUnit] = useState('Bursary Office');
 
-  // Filter for the current logged-in student
   const myAppointments = appointments.filter(a => a.studentId === studentProfile.studentId);
   
   const handleBook = () => {
@@ -505,7 +585,7 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
         <div className="space-y-6">
           <Card className="p-6">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Calendar size={18} /> Select Date</h3>
-            <input type="date" className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+            <input type="date" className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
             <div className="mt-6 space-y-3">
               <h4 className="text-sm font-medium text-slate-500">Department</h4>
               <select className="w-full p-3 border rounded-xl bg-white" value={unit} onChange={e => setUnit(e.target.value)}>
@@ -520,8 +600,8 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
             {myAppointments.length > 0 ? (
               <div className="space-y-3">
                 {myAppointments.map(appt => (
-                  <div key={appt.id} className="p-3 bg-emerald-50 border border-emerald-100 rounded-lg flex justify-between items-center">
-                    <div><p className="text-xs font-bold text-emerald-800">{appt.officer}</p><p className="text-xs text-emerald-600">{appt.date} @ {appt.time}</p></div>
+                  <div key={appt.id} className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex justify-between items-center">
+                    <div><p className="text-xs font-bold text-blue-800">{appt.officer}</p><p className="text-xs text-blue-600">{appt.date} @ {appt.time}</p></div>
                     <StatusBadge status={appt.status} />
                   </div>
                 ))}
@@ -533,7 +613,7 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Clock size={18} /> Available Slots</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {AVAILABLE_SLOTS.map(slot => (
-              <button key={slot.id} onClick={() => setSelectedSlot(slot.id)} className={`p-4 rounded-xl border text-center transition-all ${selectedSlot === slot.id ? 'bg-emerald-600 text-white shadow-lg' : 'hover:border-emerald-500'}`}>
+              <button key={slot.id} onClick={() => setSelectedSlot(slot.id)} className={`p-4 rounded-xl border text-center transition-all ${selectedSlot === slot.id ? 'bg-blue-600 text-white shadow-lg' : 'hover:border-blue-500'}`}>
                 <div className="text-lg font-bold">{slot.time}</div><div className="text-xs mt-1 opacity-80">Available</div>
               </button>
             ))}
@@ -550,16 +630,16 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
 
 const CertificateView = ({ studentProfile }) => (
   <div className="flex justify-center p-4 print:p-0 print:m-0 print:absolute print:top-0 print:left-0 print:w-full print:h-full print:z-[9999] print:bg-white">
-    <style>{`@media print { body * { visibility: hidden; } #certificate-container, #certificate-container * { visibility: visible; } #certificate-container { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; box-shadow: none; border: none; } #print-btn { display: none; } }`}</style>
+    <style>{`@media print { body { -webkit-print-color-adjust: exact; } body * { visibility: hidden; } #certificate-container, #certificate-container * { visibility: visible; } #certificate-container { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; box-shadow: none; border: none; } #print-btn { display: none; } }`}</style>
     <div id="certificate-container" className="bg-white shadow-2xl w-[700px] min-h-[900px] p-12 relative border border-slate-200 text-center print:shadow-none print:border-none print:w-full">
-      <div className="absolute top-0 left-0 w-full h-4 bg-emerald-600"></div>
+      <div className="absolute top-0 left-0 w-full h-4 bg-blue-900"></div>
       <div className="mb-12">
         <div className="w-20 h-20 bg-slate-900 rounded-full mx-auto mb-4 flex items-center justify-center text-white font-serif text-3xl">U</div>
         <h1 className="text-3xl font-serif font-bold text-slate-900 uppercase tracking-widest">University of Tech</h1>
         <p className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500">Office of the Registrar</p>
       </div>
       <div className="mb-12 border-b-2 border-slate-100 pb-8">
-        <h2 className="text-4xl font-serif text-emerald-800 mb-6 italic">Certificate of Clearance</h2>
+        <h2 className="text-4xl font-serif text-blue-900 mb-6 italic">Certificate of Clearance</h2>
         <p className="text-slate-600 text-lg">This is to certify that</p>
         <p className="text-3xl font-bold text-slate-800 my-4 font-serif">{studentProfile.name}</p>
         <p className="text-slate-600">Matriculation Number: <strong>{studentProfile.studentId}</strong></p>
@@ -570,10 +650,19 @@ const CertificateView = ({ studentProfile }) => (
         <div><p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Date of Issue</p><p className="font-medium">{SYSTEM_DATE}</p></div>
       </div>
       <div className="flex justify-between items-end mt-auto">
-        <div className="text-center"><div className="w-32 border-b border-slate-800 mb-2"></div><p className="text-xs font-bold uppercase">Registrar Signature</p></div>
+        <div className="text-center relative">
+            <div className="w-48 border-b border-slate-800 mb-2 mx-auto relative">
+                {/* Simulated Signature using SVG Path */}
+                <svg viewBox="0 0 200 60" className="h-16 absolute bottom-0 left-1/2 transform -translate-x-1/2 text-blue-900 pointer-events-none">
+                    <path d="M10,40 Q40,10 70,40 T130,40 T180,20" fill="none" stroke="currentColor" strokeWidth="2" />
+                    <text x="30" y="45" fontFamily="cursive" fontSize="20" fill="currentColor" style={{fontStyle: 'italic'}}>Dr. Al-Fayed</text> 
+                </svg>
+            </div>
+            <p className="text-xs font-bold uppercase">Registrar Signature</p>
+        </div>
         <div className="border-4 border-slate-900 p-2"><QrCode size={80} /></div>
       </div>
-      <div className="absolute bottom-0 left-0 w-full h-4 bg-slate-900"></div>
+      <div className="absolute bottom-0 left-0 w-full h-4 bg-blue-900"></div>
     </div>
     <div id="print-btn" className="fixed bottom-8 right-8"><Button className="shadow-2xl" onClick={() => window.print()}><Printer size={18} /> Print Certificate</Button></div>
   </div>
@@ -606,7 +695,9 @@ const AdminUserManagement = ({ users, setUsers, addNotification }) => {
             setUsers(users.map(u => u.id === formData.id ? { ...u, ...formData } : u));
             addNotification({ title: 'User Updated', msg: `Details for ${formData.name} updated.`, targetRole: 'admin' });
         } else {
-            setUsers([...users, { id: users.length + 1, ...formData, status: 'Active' }]);
+            // Fix: Calculate new ID correctly to avoid duplicates even after deletions
+            const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+            setUsers([...users, { id: newId, ...formData, status: 'Active' }]);
             addNotification({ title: 'User Created', msg: `New ${formData.role} account created for ${formData.name}.`, targetRole: 'admin' });
         }
         setShowModal(false);
@@ -616,7 +707,7 @@ const AdminUserManagement = ({ users, setUsers, addNotification }) => {
         <Card className="p-6 overflow-hidden">
             <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-slate-800">User Management</h2><Button onClick={handleOpenAdd}><Plus size={16} /> Add User</Button></div>
             <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm min-w-[600px]"><thead className="bg-slate-50 font-bold border-b"><tr><th className="p-3">Name</th><th className="p-3">Role</th><th className="p-3">Email</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b"><td className="p-3 font-bold text-slate-700">{u.name}</td><td className="p-3"><span className="bg-slate-100 px-2 py-1 rounded text-xs">{u.role}</span></td><td className="p-3 text-slate-500">{u.email}</td><td className="p-3 text-emerald-600 font-bold text-xs">{u.status}</td><td className="p-3 text-right flex justify-end gap-2"><button onClick={() => handleEdit(u)} className="text-blue-500 hover:bg-blue-50 p-2 rounded"><Edit2 size={16} /></button><button onClick={() => handleDelete(u.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded"><Trash2 size={16} /></button></td></tr>))}</tbody></table>
+                <table className="w-full text-left text-sm min-w-[600px]"><thead className="bg-slate-50 font-bold border-b"><tr><th className="p-3">Name</th><th className="p-3">Role</th><th className="p-3">Email</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b"><td className="p-3 font-bold text-slate-700">{u.name}</td><td className="p-3"><span className="bg-slate-100 px-2 py-1 rounded text-xs">{u.role}</span></td><td className="p-3 text-slate-500">{u.email}</td><td className="p-3 text-blue-600 font-bold text-xs">{u.status}</td><td className="p-3 text-right flex justify-end gap-2"><button onClick={() => handleEdit(u)} className="text-blue-500 hover:bg-blue-50 p-2 rounded"><Edit2 size={16} /></button><button onClick={() => handleDelete(u.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded"><Trash2 size={16} /></button></td></tr>))}</tbody></table>
             </div>
             <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={isEditing ? "Edit User" : "Add New User"}>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -653,7 +744,7 @@ const AdminAnalytics = ({ clearanceItems }) => {
 const AdminSettings = () => {
     const [settings, setSettings] = useState({ regOpen: true, maintenance: false });
     return (
-        <div className="max-w-2xl mx-auto space-y-6"><h2 className="text-xl font-bold text-slate-800">System Configuration</h2><Card className="p-6 space-y-6"><div className="flex items-center justify-between"><div><h4 className="font-bold text-slate-700">Student Registration</h4><p className="text-sm text-slate-500">Allow new students to register</p></div><button onClick={() => setSettings({...settings, regOpen: !settings.regOpen})}>{settings.regOpen ? <ToggleRight size={40} className="text-emerald-500" /> : <ToggleLeft size={40} className="text-slate-300" />}</button></div><div className="flex items-center justify-between"><div><h4 className="font-bold text-slate-700">Maintenance Mode</h4><p className="text-sm text-slate-500">Disable non-admin access</p></div><button onClick={() => setSettings({...settings, maintenance: !settings.maintenance})}>{settings.maintenance ? <ToggleRight size={40} className="text-emerald-500" /> : <ToggleLeft size={40} className="text-slate-300" />}</button></div></Card></div>
+        <div className="max-w-2xl mx-auto space-y-6"><h2 className="text-xl font-bold text-slate-800">System Configuration</h2><Card className="p-6 space-y-6"><div className="flex items-center justify-between"><div><h4 className="font-bold text-slate-700">Student Registration</h4><p className="text-sm text-slate-500">Allow new students to register</p></div><button onClick={() => setSettings({...settings, regOpen: !settings.regOpen})}>{settings.regOpen ? <ToggleRight size={40} className="text-blue-500" /> : <ToggleLeft size={40} className="text-slate-300" />}</button></div><div className="flex items-center justify-between"><div><h4 className="font-bold text-slate-700">Maintenance Mode</h4><p className="text-sm text-slate-500">Disable non-admin access</p></div><button onClick={() => setSettings({...settings, maintenance: !settings.maintenance})}>{settings.maintenance ? <ToggleRight size={40} className="text-blue-500" /> : <ToggleLeft size={40} className="text-slate-300" />}</button></div></Card></div>
     )
 }
 
@@ -680,7 +771,7 @@ const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification }) 
       <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-4 overflow-x-auto">
          <span className="text-xs font-bold uppercase text-slate-500 whitespace-nowrap">Select Dept:</span>
          {['Registrar Office', 'Department Head', 'Library Services', 'Bursary Office', 'Hostel Management'].map(unit => (
-             <button key={unit} onClick={() => { setSelectedUnit(unit); setSelectedRequest(null); }} className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedUnit === unit ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{unit}</button>
+             <button key={unit} onClick={() => { setSelectedUnit(unit); setSelectedRequest(null); }} className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedUnit === unit ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{unit}</button>
          ))}
       </div>
       <div className="flex flex-1 overflow-hidden">
@@ -688,7 +779,7 @@ const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification }) 
             <div className="p-4 border-b border-slate-100 bg-slate-50/50"><h3 className="font-bold text-slate-700">{selectedUnit} Queue ({queue.length})</h3></div>
             <div className="overflow-y-auto flex-1">
             {queue.map(item => (
-                <div key={item.id} onClick={() => setSelectedRequest(item)} className={`p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 ${selectedRequest?.id === item.id ? 'bg-emerald-50 border-l-4 border-l-emerald-500' : 'border-l-4 border-l-transparent'}`}>
+                <div key={item.id} onClick={() => setSelectedRequest(item)} className={`p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 ${selectedRequest?.id === item.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'}`}>
                     <div className="flex justify-between items-start mb-1"><h4 className="font-bold text-sm text-slate-700">{item.studentName}</h4><StatusBadge status={item.status} /></div>
                     <p className="text-xs text-slate-500">{item.studentId} • Batch {item.batch || 'N/A'}</p>
                 </div>
@@ -799,9 +890,9 @@ const OfficerReports = ({ clearanceItems }) => {
         <div className="space-y-6">
             <h2 className="text-xl font-bold text-slate-800">Departmental Reports</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="p-5 bg-emerald-50 border-emerald-100"><p className="text-xs font-bold uppercase text-emerald-600 mb-1">Clearance Rate</p><p className="text-3xl font-bold text-emerald-800">{rate}%</p></Card>
+                <Card className="p-5 bg-blue-50 border-blue-100"><p className="text-xs font-bold uppercase text-blue-600 mb-1">Clearance Rate</p><p className="text-3xl font-bold text-blue-800">{rate}%</p></Card>
                 <Card className="p-5 bg-rose-50 border-rose-100"><p className="text-xs font-bold uppercase text-rose-600 mb-1">Rejections</p><p className="text-3xl font-bold text-rose-800">{rejected}</p></Card>
-                <Card className="p-5 bg-blue-50 border-blue-100"><p className="text-xs font-bold uppercase text-blue-600 mb-1">Total Processed</p><p className="text-3xl font-bold text-blue-800">{approved + rejected}</p></Card>
+                <Card className="p-5 bg-indigo-50 border-indigo-100"><p className="text-xs font-bold uppercase text-indigo-600 mb-1">Total Processed</p><p className="text-3xl font-bold text-indigo-800">{approved + rejected}</p></Card>
             </div>
         </div>
     )
@@ -813,6 +904,7 @@ export default function UniversityClearanceSystem() {
   const [view, setView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef(null);
   
   // Central State Management
   const [clearanceDatabase, setClearanceDatabase] = useState(INITIAL_DATABASE);
@@ -837,15 +929,32 @@ export default function UniversityClearanceSystem() {
   const unreadCount = roleNotifications.filter(n => !n.read).length;
   const markAllRead = () => { setNotifications(prev => prev.map(n => (n.targetRole === role || n.targetRole === 'all') ? { ...n, read: true } : n)); };
 
+  // Click outside listener for notifications
+  useEffect(() => {
+    function handleClickOutside(event) {
+        if (notifRef.current && !notifRef.current.contains(event.target)) {
+            setShowNotifications(false);
+        }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [notifRef]);
+
   const renderOfficerContent = () => {
       if (view === 'dashboard') return <OfficerQueue clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} addNotification={addNotification} />;
       if (view === 'officer-appointments') return <OfficerAppointments appointments={appointments} updateAppointment={updateAppointment} />; 
       if (view === 'history') return <OfficerHistory clearanceItems={clearanceDatabase} />;
       if (view === 'reports') return <OfficerReports clearanceItems={clearanceDatabase} />;
+      if (view === 'profile') return <ProfileView user={activeUser} />;
       return <div>Select a menu item</div>;
   };
 
   const renderContent = () => {
+    // Safety check if active user is deleted or unavailable
+    if (!activeUser) return <div className="p-8 text-center text-slate-500">User account not found. Please contact admin.</div>;
+
     // Global Student Check for Certificate Access
     if (view === 'certificate') {
        if(role === 'student') {
@@ -866,6 +975,7 @@ export default function UniversityClearanceSystem() {
        return <CertificateView studentProfile={activeUser} />;
     }
 
+    if (view === 'profile') return <ProfileView user={activeUser} />;
     if (view === 'appointments') return <AppointmentsView navigate={setView} appointments={appointments} addAppointment={addAppointment} studentProfile={activeUser} />;
     if (view === 'guidelines') return <GuidelinesView />;
     
@@ -882,19 +992,22 @@ export default function UniversityClearanceSystem() {
   const menuItems = {
     student: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      // { id: 'profile', label: 'My Profile', icon: User }, // Hidden from menu as requested
       { id: 'appointments', label: 'Appointments', icon: Calendar },
       { id: 'certificate', label: 'My Certificate', icon: Printer },
       { id: 'guidelines', label: 'Guidelines', icon: FileText },
     ],
     officer: [
       { id: 'dashboard', label: 'Queue Management', icon: Users },
+      // { id: 'profile', label: 'My Profile', icon: User }, // Hidden from menu as requested
       { id: 'officer-appointments', label: 'Appointments', icon: Calendar },
       { id: 'history', label: 'History', icon: Clock },
       { id: 'reports', label: 'Reports', icon: FileText },
     ],
     admin: [
       { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-      { id: 'users', label: 'User Management', icon: User },
+      // { id: 'profile', label: 'My Profile', icon: User }, // Hidden from menu as requested
+      { id: 'users', label: 'User Management', icon: Users },
       { id: 'settings', label: 'System Settings', icon: Settings },
     ]
   };
@@ -913,20 +1026,20 @@ export default function UniversityClearanceSystem() {
         )}
 
         {/* Sidebar */}
-        <aside className={`fixed md:static inset-y-0 left-0 z-40 bg-white border-r-2 border-emerald-100/50 transition-all duration-300 ease-in-out flex flex-col h-full shadow-2xl md:shadow-none ${isSidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full w-64 md:w-20 md:translate-x-0'}`}>
-            <div className="h-20 flex items-center justify-center border-b border-emerald-100/50 relative overflow-hidden">
+        <aside className={`fixed md:static inset-y-0 left-0 z-40 bg-slate-50/95 border-r-2 border-blue-100/50 backdrop-blur-sm transition-all duration-300 ease-in-out flex flex-col h-full shadow-2xl md:shadow-none ${isSidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full w-64 md:w-20 md:translate-x-0'}`}>
+            <div className="h-20 flex items-center justify-center border-b border-blue-100/50 relative overflow-hidden">
                 <div className={`flex items-center gap-3 transition-all duration-300 ${isSidebarOpen ? 'px-6 w-full' : 'justify-center w-full px-0'}`}>
                    {/* Improved Logo Icon - Book & Shield Concept */}
-                   <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-emerald-200 flex-shrink-0 relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-emerald-700 to-teal-500"></div>
-                      <Shield size={22} className="relative z-10" fill="currentColor" fillOpacity={0.2} />
-                      <BookOpen size={14} className="absolute z-20 text-white" strokeWidth={3} />
+                   <div className="w-12 h-12 bg-blue-700 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 flex-shrink-0 relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-gradient-to-tr from-blue-800 to-indigo-600"></div>
+                      <Shield size={26} className="relative z-10" fill="currentColor" fillOpacity={0.2} />
+                      <BookOpen size={16} className="absolute z-20 text-white" strokeWidth={3} />
                    </div>
                    
                    {/* Logo Text - Only visible when open */}
                    <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 hidden'}`}>
-                      <span className="font-bold text-lg text-slate-800 leading-none tracking-tight">UniClearance</span>
-                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest leading-none mt-1">System</span>
+                      <span className="font-extrabold text-xl text-slate-800 leading-none tracking-tight">UniClearance</span>
+                      <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest leading-none mt-1">System</span>
                    </div>
                 </div>
             </div>
@@ -936,9 +1049,9 @@ export default function UniversityClearanceSystem() {
                     <button 
                         key={item.id}
                         onClick={() => { setView(item.id); if(window.innerWidth < 768) setIsSidebarOpen(false); }} 
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 whitespace-nowrap group relative overflow-hidden ${view === item.id ? 'bg-emerald-50 text-emerald-700 font-bold shadow-sm ring-1 ring-emerald-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 whitespace-nowrap group relative overflow-hidden ${view === item.id ? 'bg-blue-50 text-blue-700 font-bold shadow-sm ring-1 ring-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
                     >
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 transition-all duration-300 ${view === item.id ? 'opacity-100' : 'opacity-0'}`}></div>
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 bg-blue-600 transition-all duration-300 ${view === item.id ? 'opacity-100' : 'opacity-0'}`}></div>
                         <item.icon size={20} className={`flex-shrink-0 transition-transform duration-200 ${view === item.id ? 'scale-110' : 'group-hover:scale-110'}`} /> 
                         <span className={`transition-all duration-300 ${isSidebarOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 absolute pointer-events-none'}`}>{item.label}</span>
                         {!isSidebarOpen && (
@@ -950,7 +1063,7 @@ export default function UniversityClearanceSystem() {
                 ))}
             </nav>
 
-            <div className="p-4 border-t border-emerald-100/50">
+            <div className="p-4 border-t border-blue-100/50">
                 <button className={`w-full flex items-center gap-3 p-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all ${!isSidebarOpen && 'justify-center'}`}>
                     <LogOut size={20} />
                     {isSidebarOpen && <span className="font-medium">Logout</span>}
@@ -971,17 +1084,17 @@ export default function UniversityClearanceSystem() {
                             <button key={r} onClick={() => { setRole(r); setView('dashboard'); }} className={`px-3 py-1.5 rounded-md capitalize text-xs md:text-sm transition-all duration-200 ${role === r ? 'bg-white shadow-sm font-bold text-slate-800 transform scale-105' : 'text-slate-500 hover:text-slate-700'}`}>{r}</button>
                         ))}
                     </div>
-                    <div className="relative">
+                    <div className="relative" ref={notifRef}>
                         <button onClick={() => setShowNotifications(!showNotifications)} className="p-2 relative rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
                             <Bell size={20} />
                             {unreadCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>}
                         </button>
                         {showNotifications && (
-                            <div className="absolute top-full right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                                <div className="p-3 border-b bg-slate-50/80 backdrop-blur-sm flex justify-between items-center"><h3 className="font-bold text-sm text-slate-800">Notifications</h3><button onClick={markAllRead} className="text-xs text-emerald-600 font-bold hover:underline">Mark read</button></div>
+                            <div className="absolute top-full right-0 mt-3 w-80 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                                <div className="p-3 border-b bg-slate-50/80 backdrop-blur-sm flex justify-between items-center"><h3 className="font-bold text-sm text-slate-800">Notifications</h3><button onClick={markAllRead} className="text-xs text-blue-600 font-bold hover:underline">Mark read</button></div>
                                 <div className="max-h-[300px] overflow-y-auto">
                                     {roleNotifications.length === 0 ? <div className="p-8 text-center text-xs text-slate-400">No new notifications</div> : roleNotifications.map(n => (
-                                        <div key={n.id} className={`p-4 border-b hover:bg-slate-50 transition-colors cursor-pointer ${!n.read ? 'bg-emerald-50/30' : ''}`}>
+                                        <div key={n.id} className={`p-4 border-b hover:bg-slate-50 transition-colors cursor-pointer ${!n.read ? 'bg-blue-50/30' : ''}`}>
                                             <div className="flex justify-between mb-1"><span className="font-bold text-sm text-slate-700">{n.title}</span><span className="text-[10px] text-slate-400 font-medium">{n.time}</span></div>
                                             <p className="text-xs text-slate-500 leading-relaxed">{n.msg}</p>
                                         </div>
@@ -990,9 +1103,11 @@ export default function UniversityClearanceSystem() {
                             </div>
                         )}
                     </div>
-                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs border-2 border-emerald-200 shadow-sm cursor-pointer hover:bg-emerald-200 transition-colors" title={activeUser.name}>
-                        {getInitials(activeUser.name)}
-                    </div>
+                    {activeUser && (
+                        <div onClick={() => setView('profile')} className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-xs border-2 border-blue-200 shadow-sm cursor-pointer hover:bg-blue-200 transition-colors" title={activeUser.name}>
+                            {getInitials(activeUser.name)}
+                        </div>
+                    )}
                 </div>
             </header>
             <div className="flex-1 overflow-y-auto p-4 md:p-8 w-full scroll-smooth">
