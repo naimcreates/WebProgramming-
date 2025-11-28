@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin
+  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, Info, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye
 } from 'lucide-react';
 
 // --- 1. CONSTANTS & REAL-WORLD DATA ---
@@ -306,7 +306,11 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
   const handleUpload = (id) => {
     setUploading(id);
     setTimeout(() => {
-      updateClearanceItem(id, { status: 'Reviewing', note: 'Document uploaded. Waiting for officer review.' });
+      updateClearanceItem(id, { 
+          status: 'Reviewing', 
+          note: 'Document uploaded. Waiting for officer review.',
+          uploadedFile: 'Payment_Receipt_Nov2025.pdf' // Mock file upload
+      });
       const item = myItems.find(i => i.id === id);
       addNotification({
           title: 'Document Uploaded',
@@ -801,6 +805,22 @@ const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification }) 
                             <div className="space-y-1">{studentFullClearance.map(item => (<div key={item.id} className="flex justify-between text-sm p-2 bg-white rounded border border-slate-100"><span className="text-slate-600">{item.unit}</span><StatusBadge status={item.status} /></div>))}</div>
                         </div>
                     )}
+                    {/* New Section: Display Uploaded Proof for Reviewing Items */}
+                    {selectedRequest.status === 'Reviewing' && selectedRequest.uploadedFile && (
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white rounded border border-blue-100">
+                                    <FileText size={20} className="text-blue-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-slate-700">Proof of Payment</p>
+                                    <p className="text-xs text-blue-600 underline cursor-pointer">{selectedRequest.uploadedFile}</p>
+                                </div>
+                            </div>
+                            <Button variant="secondary" className="h-8 text-xs" onClick={() => alert("Opening document preview...")} icon={Eye}>View</Button>
+                        </div>
+                    )}
+
                     {selectedRequest.checklist && (
                         <div>
                             <h4 className="text-sm font-bold text-slate-700 uppercase mb-3">Checklist Actions</h4>
