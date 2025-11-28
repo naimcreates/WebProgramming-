@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, Info, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye
+  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye, CalendarCheck
 } from 'lucide-react';
 
 // --- 1. CONSTANTS & REAL-WORLD DATA ---
@@ -137,6 +137,9 @@ const INITIAL_DATABASE = [
 const INITIAL_APPOINTMENTS = [
     { id: 101, studentId: '0112230676', studentName: 'Alex Thompson', officer: 'Department Head', date: '2025-11-25', time: '10:00 AM', status: 'Confirmed' },
     { id: 102, studentId: '0112230670', studentName: 'Jamie Doe', officer: 'Library Services', date: '2025-11-26', time: '02:00 PM', status: 'Pending' },
+    { id: 103, studentId: '0112420876', studentName: 'Jordan Smith', officer: 'Bursary Office', date: '2025-11-28', time: '11:00 AM', status: 'Confirmed' },
+    { id: 104, studentId: '0112230676', studentName: 'Alex Thompson', officer: 'Bursary Office', date: '2025-11-28', time: '03:00 PM', status: 'Pending' },
+    { id: 105, studentId: '0112230670', studentName: 'Jamie Doe', officer: 'Bursary Office', date: '2025-11-29', time: '09:00 AM', status: 'Confirmed' },
 ];
 
 const INITIAL_NOTIFICATIONS = [
@@ -700,7 +703,7 @@ const AdminUserManagement = ({ users, setUsers, addNotification }) => {
             addNotification({ title: 'User Updated', msg: `Details for ${formData.name} updated.`, targetRole: 'admin' });
         } else {
             // Fix: Calculate new ID correctly to avoid duplicates even after deletions
-            const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+            const newId = users.length > 0 ? Math.max(...users.map(u => Number(u.id))) + 1 : 1;
             setUsers([...users, { id: newId, ...formData, status: 'Active' }]);
             addNotification({ title: 'User Created', msg: `New ${formData.role} account created for ${formData.name}.`, targetRole: 'admin' });
         }
@@ -710,8 +713,32 @@ const AdminUserManagement = ({ users, setUsers, addNotification }) => {
     return (
         <Card className="p-6 overflow-hidden">
             <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-slate-800">User Management</h2><Button onClick={handleOpenAdd}><Plus size={16} /> Add User</Button></div>
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm min-w-[600px]"><thead className="bg-slate-50 font-bold border-b"><tr><th className="p-3">Name</th><th className="p-3">Role</th><th className="p-3">Email</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{users.map(u => (<tr key={u.id} className="border-b"><td className="p-3 font-bold text-slate-700">{u.name}</td><td className="p-3"><span className="bg-slate-100 px-2 py-1 rounded text-xs">{u.role}</span></td><td className="p-3 text-slate-500">{u.email}</td><td className="p-3 text-blue-600 font-bold text-xs">{u.status}</td><td className="p-3 text-right flex justify-end gap-2"><button onClick={() => handleEdit(u)} className="text-blue-500 hover:bg-blue-50 p-2 rounded"><Edit2 size={16} /></button><button onClick={() => handleDelete(u.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded"><Trash2 size={16} /></button></td></tr>))}</tbody></table>
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
+                <table className="w-full text-left text-sm min-w-[600px] table-fixed">
+                    <thead className="bg-slate-50 font-bold border-b text-slate-500 uppercase text-xs sticky top-0 z-10">
+                        <tr>
+                            <th className="p-4 w-3/12">Name</th>
+                            <th className="p-4 w-2/12">Role</th>
+                            <th className="p-4 w-3/12">Email</th>
+                            <th className="p-4 w-2/12">Status</th>
+                            <th className="p-4 w-2/12 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {users.map(u => (
+                            <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="p-4 font-bold text-slate-700 whitespace-nowrap truncate">{u.name}</td>
+                                <td className="p-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-xs font-bold ${u.role === 'Student' ? 'bg-blue-50 text-blue-600' : u.role === 'Admin' ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600'}`}>{u.role}</span></td>
+                                <td className="p-4 text-slate-500 whitespace-nowrap truncate">{u.email}</td>
+                                <td className="p-4 text-emerald-600 font-bold text-xs whitespace-nowrap">{u.status}</td>
+                                <td className="p-4 text-right flex justify-end gap-2">
+                                    <button onClick={() => handleEdit(u)} className="text-blue-500 hover:bg-blue-50 p-2 rounded"><Edit2 size={16} /></button>
+                                    <button onClick={() => handleDelete(u.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded"><Trash2 size={16} /></button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
             <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={isEditing ? "Edit User" : "Add New User"}>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -851,10 +878,20 @@ const OfficerAppointments = ({ appointments, updateAppointment }) => {
     // Filter appointments for the selected department
     const queue = appointments.filter(a => a.officer === selectedUnit && a.status === 'Pending');
     
+    // New Logic: Group schedule/history by date
+    const schedule = appointments.filter(a => a.officer === selectedUnit && a.status !== 'Pending'); 
+    const groupedSchedule = schedule.reduce((acc, appt) => {
+        const date = appt.date;
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(appt);
+        return acc;
+    }, {});
+    const sortedDates = Object.keys(groupedSchedule).sort();
+    
     const handleDecision = (id, status) => updateAppointment(id, { status });
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] p-6">
+        <div className="flex flex-col h-[calc(100vh-140px)] p-6 overflow-y-auto">
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <h2 className="text-xl font-bold text-slate-800">Appointment Requests</h2>
                 <div className="flex items-center gap-2">
@@ -871,10 +908,10 @@ const OfficerAppointments = ({ appointments, updateAppointment }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Pending Requests Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                 {queue.length === 0 ? (
-                    <div className="col-span-3 text-center py-12">
-                        <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3 text-slate-400"><Calendar size={24} /></div>
+                    <div className="col-span-3 text-center py-8 border-2 border-dashed border-slate-200 rounded-xl">
                         <p className="text-slate-400 italic">No pending appointments for {selectedUnit}.</p>
                     </div>
                 ) : queue.map(apt => (
@@ -886,6 +923,41 @@ const OfficerAppointments = ({ appointments, updateAppointment }) => {
                         </div>
                     </Card>
                 ))}
+            </div>
+
+            {/* New: Appointment Schedule & History Section */}
+            <div className="mt-8 pt-8 border-t border-slate-200">
+                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <CalendarCheck size={20} className="text-blue-600"/> 
+                    Appointment Schedule
+                </h3>
+                <div className="space-y-8">
+                    {sortedDates.length === 0 ? (
+                        <p className="text-slate-400 italic text-center">No scheduled appointments.</p>
+                    ) : (
+                        sortedDates.map(date => (
+                            <div key={date} className="relative pl-8 border-l-2 border-blue-100 last:border-l-0">
+                                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-100 border-2 border-blue-500"></div>
+                                <h4 className="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">{new Date(date).toDateString()}</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {groupedSchedule[date].map(apt => (
+                                        <div key={apt.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-all flex justify-between items-center">
+                                            <div>
+                                                <p className="font-bold text-sm text-slate-800">{apt.studentName}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <Clock size={12} className="text-slate-400"/>
+                                                    <p className="text-xs text-slate-500 font-medium">{apt.time}</p>
+                                                </div>
+                                                <p className="text-[10px] text-slate-400 mt-1 font-mono">{apt.studentId}</p>
+                                            </div>
+                                            <StatusBadge status={apt.status} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
         </div>
     );
