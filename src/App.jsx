@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye, CalendarCheck
+  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye, CalendarCheck, Filter, PieChart, Lock, UserX
 } from 'lucide-react';
 
 // --- 1. CONSTANTS & REAL-WORLD DATA ---
@@ -149,10 +149,10 @@ const INITIAL_NOTIFICATIONS = [
 ];
 
 const AVAILABLE_SLOTS = [
-  { id: 1, time: '09:00 AM', available: true },
-  { id: 2, time: '10:00 AM', available: false },
-  { id: 3, time: '11:00 AM', available: true },
-  { id: 4, time: '02:00 PM', available: true },
+  { id: 1, time: '09:00 AM' },
+  { id: 2, time: '10:00 AM' },
+  { id: 3, time: '11:00 AM' },
+  { id: 4, time: '02:00 PM' },
 ];
 
 // --- 2. UTILITIES ---
@@ -302,9 +302,13 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
 
   const myItems = useMemo(() => clearanceItems.filter(item => item.studentId === studentProfile.studentId), [clearanceItems, studentProfile]);
   
-  const progress = myItems.length > 0 ? Math.round((myItems.filter(i => i.status === 'Approved').length / myItems.length) * 100) : 0;
+  // Strict 'Approved' check for accuracy
+  const completedCount = myItems.filter(i => i.status === 'Approved').length;
+  const totalItems = myItems.length;
+  const progress = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
+  
   const totalDue = myItems.reduce((acc, curr) => acc + (curr.paid ? 0 : curr.fee), 0);
-  const isCleared = progress === 100 && myItems.length > 0;
+  const isCleared = totalItems > 0 && myItems.every(i => i.status === 'Approved');
 
   const handleUpload = (id) => {
     setUploading(id);
@@ -312,7 +316,7 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
       updateClearanceItem(id, { 
           status: 'Reviewing', 
           note: 'Document uploaded. Waiting for officer review.',
-          uploadedFile: 'Payment_Receipt_Nov2025.pdf' // Mock file upload
+          uploadedFile: 'Payment_Receipt_Nov2025.pdf' 
       });
       const item = myItems.find(i => i.id === id);
       addNotification({
@@ -435,8 +439,8 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
           <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-4 text-blue-600 shadow-inner"><GraduationCap size={32} /></div>
           <h3 className="text-lg font-bold text-slate-800">Final Clearance</h3>
           <p className="text-sm text-slate-500 mt-2 mb-4">Certificate available upon 100% completion.</p>
-          <Button disabled={progress < 100} onClick={() => onNavigate('certificate')} className="w-full">
-             {progress < 100 ? `${myItems.length - myItems.filter(i=>i.status==='Approved').length} Steps Remaining` : 'Download Certificate'}
+          <Button disabled={!isCleared} onClick={() => onNavigate('certificate')} className="w-full">
+             {isCleared ? 'Download Certificate' : `${totalItems - completedCount} Steps Remaining`}
           </Button>
         </Card>
       </div>
@@ -563,11 +567,27 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
 
   const myAppointments = appointments.filter(a => a.studentId === studentProfile.studentId);
   
+  // Dynamic slot availability (Double booking prevention)
+  const getSlotsForDate = (date, officer) => {
+      const takenTimes = appointments
+          .filter(a => a.date === date && a.officer === officer && a.status !== 'Declined')
+          .map(a => a.time);
+      
+      return AVAILABLE_SLOTS.map(slot => ({
+          ...slot,
+          available: !takenTimes.includes(slot.time)
+      }));
+  };
+
+  const currentSlots = useMemo(() => getSlotsForDate(selectedDate, unit), [selectedDate, unit, appointments]);
+
   const handleBook = () => {
     if(!selectedSlot) return;
     setBooked(true);
     setTimeout(() => {
-      const slotTime = AVAILABLE_SLOTS.find(s => s.id === selectedSlot).time;
+      const slotTime = currentSlots.find(s => s.id === selectedSlot)?.time;
+      if (!slotTime) return;
+
       const newAppt = {
         id: Date.now(),
         studentId: studentProfile.studentId,
@@ -619,14 +639,23 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
         <Card className="p-6 lg:col-span-2">
           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Clock size={18} /> Available Slots</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {AVAILABLE_SLOTS.map(slot => (
-              <button key={slot.id} onClick={() => setSelectedSlot(slot.id)} className={`p-4 rounded-xl border text-center transition-all ${selectedSlot === slot.id ? 'bg-blue-600 text-white shadow-lg' : 'hover:border-blue-500'}`}>
-                <div className="text-lg font-bold">{slot.time}</div><div className="text-xs mt-1 opacity-80">Available</div>
+            {currentSlots.map(slot => (
+              <button 
+                key={slot.id} 
+                disabled={!slot.available}
+                onClick={() => setSelectedSlot(slot.id)} 
+                className={`p-4 rounded-xl border text-center transition-all ${
+                    !slot.available ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-100' :
+                    selectedSlot === slot.id ? 'bg-blue-600 text-white shadow-lg' : 'hover:border-blue-500 hover:shadow-md bg-white'
+                }`}
+              >
+                <div className="text-lg font-bold">{slot.time}</div>
+                <div className="text-xs mt-1 opacity-80">{slot.available ? 'Available' : 'Booked'}</div>
               </button>
             ))}
           </div>
           <div className="p-4 bg-slate-50 rounded-xl flex justify-between items-center border border-slate-100">
-            <div><p className="text-sm text-slate-500">Selected Slot</p><p className="font-bold text-slate-800">{selectedSlot ? AVAILABLE_SLOTS.find(s => s.id === selectedSlot).time : 'None selected'}</p></div>
+            <div><p className="text-sm text-slate-500">Selected Slot</p><p className="font-bold text-slate-800">{selectedSlot ? currentSlots.find(s => s.id === selectedSlot)?.time : 'None selected'}</p></div>
             <Button disabled={!selectedSlot} onClick={handleBook}>{booked ? 'Booking...' : 'Confirm Booking'}</Button>
           </div>
         </Card>
@@ -677,12 +706,23 @@ const CertificateView = ({ studentProfile }) => (
 
 // --- 5. ADMIN MODULES ---
 
-const AdminUserManagement = ({ users, setUsers, addNotification }) => {
+const AdminUserManagement = ({ users, setUsers, addNotification, setClearanceDatabase, setAppointments }) => {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState({ id: null, name: '', email: '', role: 'Student', studentId: '' });
+    const [formData, setFormData] = useState({ id: null, name: '', email: '', role: 'Student', studentId: '', batch: '233' }); 
 
-    const handleDelete = (id) => { if(confirm('Are you sure?')) setUsers(users.filter(u => u.id !== id)); }
+    const handleDelete = (id) => { 
+        if(confirm('Are you sure you want to delete this user and all their data?')) {
+            const userToDelete = users.find(u => u.id === id);
+            setUsers(users.filter(u => u.id !== id));
+            
+            if (userToDelete?.role === 'Student') {
+                setClearanceDatabase(prev => prev.filter(item => item.studentId !== userToDelete.studentId));
+                setAppointments(prev => prev.filter(app => app.studentId !== userToDelete.studentId));
+            }
+            addNotification({ title: 'User Deleted', msg: 'User and associated data removed.', targetRole: 'admin' });
+        }
+    }
     
     const handleEdit = (user) => {
         setFormData(user);
@@ -691,9 +731,21 @@ const AdminUserManagement = ({ users, setUsers, addNotification }) => {
     };
 
     const handleOpenAdd = () => {
-        setFormData({ id: null, name: '', email: '', role: 'Student', studentId: '' });
+        setFormData({ id: null, name: '', email: '', role: 'Student', studentId: '', batch: '233' });
         setIsEditing(false);
         setShowModal(true);
+    };
+
+    const createClearanceForStudent = (student) => {
+        const batch = student.batch || 'N/A';
+        const newItems = [
+            { id: Date.now() + 1, studentId: student.studentId, studentName: student.name, batch: batch, unit: 'Department Head', type: 'Departmental', status: 'Pending', fee: 0, paid: true, note: 'New student entry.' },
+            { id: Date.now() + 2, studentId: student.studentId, studentName: student.name, batch: batch, unit: 'Library Services', type: 'Library', status: 'Pending', fee: 0, paid: true, note: 'Library card issuance pending.' },
+            { id: Date.now() + 3, studentId: student.studentId, studentName: student.name, batch: batch, unit: 'Bursary Office', type: 'Finance', status: 'Pending', fee: 0, paid: true, note: 'Initial fee check.' },
+            { id: Date.now() + 4, studentId: student.studentId, studentName: student.name, batch: batch, unit: 'Hostel Management', type: 'Hostel', status: 'Pending', fee: 0, paid: true, note: 'Hostel allocation check.' },
+            { id: Date.now() + 5, studentId: student.studentId, studentName: student.name, batch: batch, unit: 'Registrar Office', type: 'Administrative', status: 'Pending', fee: 0, paid: false, note: 'Final clearance pending.', checklist: [{label: 'Registration Card', status: 'Pending'}] },
+        ];
+        setClearanceDatabase(prev => [...prev, ...newItems]);
     };
 
     const handleSubmit = (e) => {
@@ -702,9 +754,13 @@ const AdminUserManagement = ({ users, setUsers, addNotification }) => {
             setUsers(users.map(u => u.id === formData.id ? { ...u, ...formData } : u));
             addNotification({ title: 'User Updated', msg: `Details for ${formData.name} updated.`, targetRole: 'admin' });
         } else {
-            // Fix: Calculate new ID correctly to avoid duplicates even after deletions
             const newId = users.length > 0 ? Math.max(...users.map(u => Number(u.id))) + 1 : 1;
-            setUsers([...users, { id: newId, ...formData, status: 'Active' }]);
+            const newUser = { id: newId, ...formData, status: 'Active' };
+            
+            setUsers([...users, newUser]);
+            if (newUser.role === 'Student') {
+                createClearanceForStudent(newUser);
+            }
             addNotification({ title: 'User Created', msg: `New ${formData.role} account created for ${formData.name}.`, targetRole: 'admin' });
         }
         setShowModal(false);
@@ -746,7 +802,10 @@ const AdminUserManagement = ({ users, setUsers, addNotification }) => {
                     <div><label className="block text-sm font-bold text-slate-700 mb-1">Email</label><input required type="email" className="w-full border p-2 rounded" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
                     <div><label className="block text-sm font-bold text-slate-700 mb-1">Role</label><select className="w-full border p-2 rounded" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}><option>Student</option><option>Officer</option><option>Admin</option></select></div>
                     {formData.role === 'Student' && (
-                        <div><label className="block text-sm font-bold text-slate-700 mb-1">Student ID</label><input className="w-full border p-2 rounded" value={formData.studentId || ''} onChange={e => setFormData({...formData, studentId: e.target.value})} /></div>
+                        <>
+                            <div><label className="block text-sm font-bold text-slate-700 mb-1">Student ID</label><input className="w-full border p-2 rounded" value={formData.studentId || ''} onChange={e => setFormData({...formData, studentId: e.target.value})} /></div>
+                            <div><label className="block text-sm font-bold text-slate-700 mb-1">Batch</label><input className="w-full border p-2 rounded" value={formData.batch || ''} onChange={e => setFormData({...formData, batch: e.target.value})} /></div>
+                        </>
                     )}
                     <div className="pt-4"><Button type="submit" className="w-full">{isEditing ? "Update User" : "Create Account"}</Button></div>
                 </form>
@@ -759,7 +818,8 @@ const AdminAnalytics = ({ clearanceItems }) => {
   const total = clearanceItems.length;
   const approved = clearanceItems.filter(i => i.status === 'Approved').length;
   const pending = clearanceItems.filter(i => i.status === 'Pending' || i.status === 'Reviewing').length;
-  const revenue = clearanceItems.reduce((acc, curr) => acc + (curr.paid ? (curr.fee > 0 ? curr.fee : 0) : 0), 45000);
+  // FIX: Accurate revenue calculation (removed hardcoded base)
+  const revenue = clearanceItems.reduce((acc, curr) => acc + (curr.paid ? (curr.fee > 0 ? curr.fee : 0) : 0), 0);
 
   return (
     <div className="space-y-6 animate-in fade-in">
@@ -785,7 +845,12 @@ const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification }) 
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [comment, setComment] = useState('');
 
-  const queue = clearanceItems.filter(item => item.unit === selectedUnit);
+  // Queue only shows items that REQUIRE action
+  const queue = clearanceItems.filter(item => 
+      item.unit === selectedUnit && 
+      (item.status === 'Pending' || item.status === 'Reviewing' || item.status === 'Submitted')
+  );
+  
   const studentFullClearance = selectedRequest ? clearanceItems.filter(item => item.studentId === selectedRequest.studentId && item.unit !== 'Registrar Office') : [];
   const allOthersApproved = studentFullClearance.every(item => item.status === 'Approved');
 
@@ -807,7 +872,10 @@ const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification }) 
       </div>
       <div className="flex flex-1 overflow-hidden">
         <Card className="w-1/3 flex flex-col rounded-none border-r border-t-0 border-b-0 border-l-0" noPadding>
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50"><h3 className="font-bold text-slate-700">{selectedUnit} Queue ({queue.length})</h3></div>
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h3 className="font-bold text-slate-700">{selectedUnit} Queue</h3>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">{queue.length}</span>
+            </div>
             <div className="overflow-y-auto flex-1">
             {queue.map(item => (
                 <div key={item.id} onClick={() => setSelectedRequest(item)} className={`p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 ${selectedRequest?.id === item.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'}`}>
@@ -815,7 +883,13 @@ const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification }) 
                     <p className="text-xs text-slate-500">{item.studentId} • Batch {item.batch || 'N/A'}</p>
                 </div>
             ))}
-            {queue.length === 0 && <div className="p-8 text-center text-slate-400">No pending requests.</div>}
+            {queue.length === 0 && (
+                <div className="p-8 text-center text-slate-400 flex flex-col items-center">
+                    <CheckCircle size={32} className="mb-2 text-emerald-200" />
+                    <p>All caught up!</p>
+                    <p className="text-xs mt-1">No pending requests.</p>
+                </div>
+            )}
             </div>
         </Card>
         <div className="flex-1 p-8 overflow-y-auto bg-slate-50/50">
@@ -963,35 +1037,104 @@ const OfficerAppointments = ({ appointments, updateAppointment }) => {
     );
 };
 
-const OfficerHistory = ({ clearanceItems }) => {
-    const historyItems = clearanceItems.filter(i => i.status !== 'Pending' && i.status !== 'Reviewing');
-    return (
-        <Card className="p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-6">Process History</h2>
-            <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 font-bold border-b"><tr><th className="p-3">Student ID</th><th className="p-3">Name</th><th className="p-3">Unit</th><th className="p-3">Decision</th><th className="p-3">Note</th></tr></thead><tbody>{historyItems.map(item => (<tr key={item.id} className="border-b hover:bg-slate-50"><td className="p-3 font-mono text-xs">{item.studentId}</td><td className="p-3">{item.studentName}</td><td className="p-3">{item.unit}</td><td className="p-3"><StatusBadge status={item.status} /></td><td className="p-3 text-slate-500 truncate max-w-xs">{item.note}</td></tr>))}</tbody></table></div>
-        </Card>
-    )
-}
+// --- NEW COMPONENT: Combined Analytics & History ---
+const OfficerAnalytics = ({ clearanceItems }) => {
+    const [filter, setFilter] = useState('All');
 
-const OfficerReports = ({ clearanceItems }) => {
+    // Stats Calculations
     const total = clearanceItems.length;
     const approved = clearanceItems.filter(i => i.status === 'Approved').length;
     const rejected = clearanceItems.filter(i => i.status === 'Rejected').length;
     const rate = total > 0 ? Math.round((approved / total) * 100) : 0;
+    const revenue = clearanceItems.reduce((acc, curr) => acc + (curr.paid ? (curr.fee > 0 ? curr.fee : 0) : 0), 0);
+
+    // History List Filtering
+    const historyItems = clearanceItems.filter(i => 
+        i.status !== 'Pending' && i.status !== 'Reviewing' && 
+        (filter === 'All' || i.status === filter)
+    );
+
     return (
-        <div className="space-y-6">
-            <h2 className="text-xl font-bold text-slate-800">Departmental Reports</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="p-5 bg-blue-50 border-blue-100"><p className="text-xs font-bold uppercase text-blue-600 mb-1">Clearance Rate</p><p className="text-3xl font-bold text-blue-800">{rate}%</p></Card>
-                <Card className="p-5 bg-rose-50 border-rose-100"><p className="text-xs font-bold uppercase text-rose-600 mb-1">Rejections</p><p className="text-3xl font-bold text-rose-800">{rejected}</p></Card>
-                <Card className="p-5 bg-indigo-50 border-indigo-100"><p className="text-xs font-bold uppercase text-indigo-600 mb-1">Total Processed</p><p className="text-3xl font-bold text-indigo-800">{approved + rejected}</p></Card>
+        <div className="space-y-8 animate-in fade-in">
+            {/* Header Section */}
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-800">Analytics & History</h2>
+                    <p className="text-slate-500">Overview of departmental performance and logs</p>
+                </div>
+                <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
+                   <div className="p-1.5 bg-blue-50 text-blue-600 rounded"><Filter size={16} /></div>
+                   <select 
+                       className="text-sm font-medium text-slate-700 bg-transparent outline-none pr-2"
+                       value={filter}
+                       onChange={(e) => setFilter(e.target.value)}
+                   >
+                       <option value="All">All Actions</option>
+                       <option value="Approved">Approved Only</option>
+                       <option value="Rejected">Rejected Only</option>
+                   </select>
+                </div>
             </div>
+
+            {/* Reports / Stats Section */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="p-5 flex items-center gap-4 border-blue-100 bg-blue-50/50">
+                    <div className="p-3 rounded-lg bg-blue-500 text-white shadow-lg shadow-blue-200"><TrendingUp size={20} /></div>
+                    <div><p className="text-xs font-bold uppercase text-blue-600 mb-1">Clearance Rate</p><p className="text-2xl font-bold text-slate-800">{rate}%</p></div>
+                </Card>
+                <Card className="p-5 flex items-center gap-4 border-emerald-100 bg-emerald-50/50">
+                    <div className="p-3 rounded-lg bg-emerald-500 text-white shadow-lg shadow-emerald-200"><CheckCircle size={20} /></div>
+                    <div><p className="text-xs font-bold uppercase text-emerald-600 mb-1">Approved</p><p className="text-2xl font-bold text-slate-800">{approved}</p></div>
+                </Card>
+                <Card className="p-5 flex items-center gap-4 border-rose-100 bg-rose-50/50">
+                    <div className="p-3 rounded-lg bg-rose-500 text-white shadow-lg shadow-rose-200"><XCircle size={20} /></div>
+                    <div><p className="text-xs font-bold uppercase text-rose-600 mb-1">Rejected</p><p className="text-2xl font-bold text-slate-800">{rejected}</p></div>
+                </Card>
+                <Card className="p-5 flex items-center gap-4 border-purple-100 bg-purple-50/50">
+                    <div className="p-3 rounded-lg bg-purple-500 text-white shadow-lg shadow-purple-200"><PieChart size={20} /></div>
+                    <div><p className="text-xs font-bold uppercase text-purple-600 mb-1">Total Processed</p><p className="text-2xl font-bold text-slate-800">{approved + rejected}</p></div>
+                </Card>
+            </div>
+
+            {/* History Table Section */}
+            <Card className="p-0 overflow-hidden shadow-lg border-0">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2"><Clock size={18} className="text-slate-400"/> Process Logs</h3>
+                    <span className="text-xs font-mono text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">Total: {historyItems.length}</span>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50/50 font-bold border-b text-slate-500 uppercase text-xs">
+                            <tr>
+                                <th className="p-4 w-1/6">Student ID</th>
+                                <th className="p-4 w-1/4">Name</th>
+                                <th className="p-4 w-1/4">Unit / Department</th>
+                                <th className="p-4 w-1/6">Decision</th>
+                                <th className="p-4 w-1/6">Note</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {historyItems.length === 0 ? (
+                                <tr><td colSpan="5" className="p-8 text-center text-slate-400 italic">No records found for the selected filter.</td></tr>
+                            ) : historyItems.map(item => (
+                                <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                    <td className="p-4 font-mono text-xs text-slate-600 font-bold">{item.studentId}</td>
+                                    <td className="p-4 font-medium text-slate-800">{item.studentName}</td>
+                                    <td className="p-4 text-slate-600">{item.unit}</td>
+                                    <td className="p-4"><StatusBadge status={item.status} /></td>
+                                    <td className="p-4 text-slate-500 text-xs max-w-xs truncate group-hover:whitespace-normal group-hover:overflow-visible transition-all" title={item.note}>{item.note || '-'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
         </div>
     )
 }
 
 // --- MAIN APP ---
-export default function UniversityClearanceSystem() {
+export default function App() {
   const [role, setRole] = useState('student');
   const [view, setView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
@@ -1004,12 +1147,21 @@ export default function UniversityClearanceSystem() {
   const [users, setUsers] = useState(INITIAL_USERS);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
 
-  // Derived Active User based on Role
+  // FIX: Robust Active User Selection (Prevents Crash if All Users Deleted)
   const activeUser = useMemo(() => {
-     if(role === 'student') return users.find(u => u.studentId === '0112230676') || users[0];
-     if(role === 'officer') return users.find(u => u.role === 'Officer') || users[1];
-     if(role === 'admin') return users.find(u => u.role === 'Admin') || users[2];
-     return users[0];
+     if(role === 'student') {
+        const student = users.find(u => u.role === 'Student');
+        return student || null; // Explicit null if no student found
+     }
+     if(role === 'officer') {
+        const officer = users.find(u => u.role === 'Officer');
+        return officer || null;
+     }
+     if(role === 'admin') {
+        const admin = users.find(u => u.role === 'Admin');
+        return admin || null;
+     }
+     return null;
   }, [role, users]);
 
   const updateClearanceItem = (itemId, updates) => { setClearanceDatabase(prev => prev.map(item => item.id === itemId ? { ...item, ...updates } : item)); };
@@ -1017,11 +1169,17 @@ export default function UniversityClearanceSystem() {
   const addAppointment = (newAppt) => { setAppointments(prev => [...prev, newAppt]); addNotification({ title: 'Appointment Booked', msg: `Booking request sent to ${newAppt.officer}.`, targetRole: 'student' }); }
   const addNotification = (notif) => { setNotifications(prev => [{ id: Date.now(), time: 'Just now', read: false, ...notif }, ...prev]); };
   
-  const roleNotifications = notifications.filter(n => n.targetRole === role || n.targetRole === 'all');
+  // FIX: Notification Privacy Leak Check
+  const roleNotifications = notifications.filter(n => {
+      if (n.targetRole === 'all') return true;
+      if (n.targetRole !== role) return false;
+      if (role === 'student' && n.targetId && activeUser && n.targetId !== activeUser.studentId) return false;
+      return true;
+  });
+
   const unreadCount = roleNotifications.filter(n => !n.read).length;
   const markAllRead = () => { setNotifications(prev => prev.map(n => (n.targetRole === role || n.targetRole === 'all') ? { ...n, read: true } : n)); };
 
-  // Click outside listener for notifications
   useEffect(() => {
     function handleClickOutside(event) {
         if (notifRef.current && !notifRef.current.contains(event.target)) {
@@ -1037,29 +1195,38 @@ export default function UniversityClearanceSystem() {
   const renderOfficerContent = () => {
       if (view === 'dashboard') return <OfficerQueue clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} addNotification={addNotification} />;
       if (view === 'officer-appointments') return <OfficerAppointments appointments={appointments} updateAppointment={updateAppointment} />; 
-      if (view === 'history') return <OfficerHistory clearanceItems={clearanceDatabase} />;
-      if (view === 'reports') return <OfficerReports clearanceItems={clearanceDatabase} />;
+      if (view === 'analytics') return <OfficerAnalytics clearanceItems={clearanceDatabase} />;
       if (view === 'profile') return <ProfileView user={activeUser} />;
       return <div>Select a menu item</div>;
   };
 
   const renderContent = () => {
-    // Safety check if active user is deleted or unavailable
-    if (!activeUser) return <div className="p-8 text-center text-slate-500">User account not found. Please contact admin.</div>;
+    // FIX: Empty State Handling (Prevents Crash)
+    if (!activeUser) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8 animate-in fade-in">
+                <div className="bg-slate-100 p-6 rounded-full mb-6 border-4 border-slate-200"><UserX size={64} className="text-slate-400" /></div>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">No Account Found</h2>
+                <p className="text-slate-500 max-w-md mb-6">There are no active users for the <span className="font-bold capitalize">{role}</span> role. Please contact the administrator or switch roles.</p>
+                {role !== 'admin' && (
+                    <Button onClick={() => { setRole('admin'); setView('users'); }}>Switch to Admin</Button>
+                )}
+            </div>
+        );
+    }
 
-    // Global Student Check for Certificate Access
     if (view === 'certificate') {
        if(role === 'student') {
             const studentItems = clearanceDatabase.filter(item => item.studentId === activeUser.studentId);
-            const progress = studentItems.length > 0 ? Math.round((studentItems.filter(i => i.status === 'Approved').length / studentItems.length) * 100) : 0;
+            const isCleared = studentItems.length > 0 && studentItems.every(i => i.status === 'Approved');
             
-            if (progress < 100) {
+            if (!isCleared) {
                return (
-                 <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8">
-                   <div className="bg-red-100 p-4 rounded-full mb-4"><ShieldAlert size={48} className="text-red-600" /></div>
-                   <h2 className="text-2xl font-bold text-slate-800 mb-2">Restricted Access</h2>
-                   <p className="text-slate-500 max-w-md">Your clearance process is not yet complete (100% required). Please complete all pending steps in the dashboard to unlock your certificate.</p>
-                   <Button onClick={() => setView('dashboard')} className="mt-6">Return to Dashboard</Button>
+                 <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8 animate-in fade-in zoom-in duration-300">
+                   <div className="bg-red-50 p-6 rounded-full mb-6 border-4 border-red-100 shadow-xl"><Lock size={64} className="text-red-500" /></div>
+                   <h2 className="text-3xl font-bold text-slate-800 mb-3">Restricted Access</h2>
+                   <p className="text-slate-500 max-w-md text-lg leading-relaxed">Your clearance process is not yet complete. You must have <strong className="text-slate-800">100% Approval</strong> from all departments to unlock your certificate.</p>
+                   <Button onClick={() => setView('dashboard')} className="mt-8 px-8 py-3 text-lg shadow-xl shadow-blue-200">Return to Dashboard</Button>
                  </div>
                );
             }
@@ -1071,9 +1238,15 @@ export default function UniversityClearanceSystem() {
     if (view === 'appointments') return <AppointmentsView navigate={setView} appointments={appointments} addAppointment={addAppointment} studentProfile={activeUser} />;
     if (view === 'guidelines') return <GuidelinesView />;
     
-    if (view === 'history') return <OfficerHistory clearanceItems={clearanceDatabase} />;
-    if (view === 'reports') return <OfficerReports clearanceItems={clearanceDatabase} />;
-    if (view === 'users') return <AdminUserManagement users={users} setUsers={setUsers} addNotification={addNotification} />;
+    if (view === 'users') return (
+        <AdminUserManagement 
+            users={users} 
+            setUsers={setUsers} 
+            addNotification={addNotification} 
+            setClearanceDatabase={setClearanceDatabase}
+            setAppointments={setAppointments}
+        />
+    );
     if (view === 'settings') return <AdminSettings />;
 
     if (role === 'student') return <StudentDashboard studentProfile={activeUser} clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} onNavigate={setView} addNotification={addNotification} />;
@@ -1084,21 +1257,17 @@ export default function UniversityClearanceSystem() {
   const menuItems = {
     student: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      // { id: 'profile', label: 'My Profile', icon: User }, // Hidden from menu as requested
       { id: 'appointments', label: 'Appointments', icon: Calendar },
       { id: 'certificate', label: 'My Certificate', icon: Printer },
       { id: 'guidelines', label: 'Guidelines', icon: FileText },
     ],
     officer: [
       { id: 'dashboard', label: 'Queue Management', icon: Users },
-      // { id: 'profile', label: 'My Profile', icon: User }, // Hidden from menu as requested
       { id: 'officer-appointments', label: 'Appointments', icon: Calendar },
-      { id: 'history', label: 'History', icon: Clock },
-      { id: 'reports', label: 'Reports', icon: FileText },
+      { id: 'analytics', label: 'Reports & History', icon: FileText },
     ],
     admin: [
       { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-      // { id: 'profile', label: 'My Profile', icon: User }, // Hidden from menu as requested
       { id: 'users', label: 'User Management', icon: Users },
       { id: 'settings', label: 'System Settings', icon: Settings },
     ]
@@ -1112,23 +1281,19 @@ export default function UniversityClearanceSystem() {
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden">
-        {/* Mobile Sidebar Backdrop */}
         {isSidebarOpen && window.innerWidth < 768 && (
           <div className="fixed inset-0 bg-slate-900/60 z-30 backdrop-blur-sm animate-in fade-in" onClick={() => setIsSidebarOpen(false)}></div>
         )}
 
-        {/* Sidebar */}
         <aside className={`fixed md:static inset-y-0 left-0 z-40 bg-slate-50/95 border-r-2 border-blue-100/50 backdrop-blur-sm transition-all duration-300 ease-in-out flex flex-col h-full shadow-2xl md:shadow-none ${isSidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full w-64 md:w-20 md:translate-x-0'}`}>
             <div className="h-20 flex items-center justify-center border-b border-blue-100/50 relative overflow-hidden">
                 <div className={`flex items-center gap-3 transition-all duration-300 ${isSidebarOpen ? 'px-6 w-full' : 'justify-center w-full px-0'}`}>
-                   {/* Improved Logo Icon - Book & Shield Concept */}
                    <div className="w-12 h-12 bg-blue-700 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 flex-shrink-0 relative overflow-hidden group">
                       <div className="absolute inset-0 bg-gradient-to-tr from-blue-800 to-indigo-600"></div>
                       <Shield size={26} className="relative z-10" fill="currentColor" fillOpacity={0.2} />
                       <BookOpen size={16} className="absolute z-20 text-white" strokeWidth={3} />
                    </div>
                    
-                   {/* Logo Text - Only visible when open */}
                    <div className={`flex flex-col overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 hidden'}`}>
                       <span className="font-extrabold text-xl text-slate-800 leading-none tracking-tight">UniClearance</span>
                       <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest leading-none mt-1">System</span>
@@ -1163,7 +1328,6 @@ export default function UniversityClearanceSystem() {
             </div>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden relative w-full bg-slate-50/50">
             <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 md:px-8 z-20 flex-shrink-0 sticky top-0">
                 <div className="flex items-center gap-4">
