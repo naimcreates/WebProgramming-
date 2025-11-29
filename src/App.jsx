@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye, CalendarCheck, Filter, PieChart, Lock, UserX
+  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye, CalendarCheck, Filter, PieChart, Lock, UserX, Siren, Timer, FileWarning, ExternalLink
 } from 'lucide-react';
 
 // --- 1. CONSTANTS & REAL-WORLD DATA ---
 
 const SYSTEM_DATE = "Nov 27, 2025";
 
-// Initial User Data
+const DEFAULT_CONFIG = {
+    emergencySLAHours: 24,
+    autoEscalationHours: 6,
+    maxEmergencyRequestsPerYear: 2
+};
+
 const INITIAL_USERS = [
     { 
         id: 1, 
@@ -20,11 +25,12 @@ const INITIAL_USERS = [
         batch: '223', 
         semester: '8th (Final)',
         phone: '+1 (555) 012-3456',
-        address: '123 Campus Dorm, Block B'
+        address: '123 Campus Dorm, Block B',
+        emergencyQuotaUsed: 0
     },
     { id: 2, name: 'Sarah Jenkins', role: 'Officer', email: 'sarah.j@uni.edu', status: 'Active', phone: '+1 (555) 987-6543', dept: 'Registrar Office' },
     { id: 3, name: 'Dr. Al-Fayed', role: 'Admin', email: 'admin@uni.edu', status: 'Active', phone: '+1 (555) 000-1111' },
-    { id: 4, name: 'Jamie Doe', role: 'Student', email: 'jamie.d@uni.edu', status: 'Active', studentId: '0112230670', dept: 'EEE', batch: '231', semester: '6th', phone: '+1 (555) 222-3333' },
+    { id: 4, name: 'Jamie Doe', role: 'Student', email: 'jamie.d@uni.edu', status: 'Active', studentId: '0112230670', dept: 'EEE', batch: '231', semester: '6th', phone: '+1 (555) 222-3333', emergencyQuotaUsed: 1 },
     { id: 5, name: 'Jordan Smith', role: 'Student', email: 'jordan.s@uni.edu', status: 'Active', studentId: '0112420876', dept: 'BBA', batch: '232', semester: '4th', phone: '+1 (555) 444-5555' },
 ];
 
@@ -142,6 +148,8 @@ const INITIAL_APPOINTMENTS = [
     { id: 105, studentId: '0112230670', studentName: 'Jamie Doe', officer: 'Bursary Office', date: '2025-11-29', time: '09:00 AM', status: 'Confirmed' },
 ];
 
+const INITIAL_EMERGENCY_REQUESTS = [];
+
 const INITIAL_NOTIFICATIONS = [
   { id: 1, title: 'Hostel Cleared', msg: 'Your room handover was successful.', time: '2 mins ago', read: false, targetRole: 'student', targetId: '0112230676' },
   { id: 2, title: 'New Request', msg: 'Alex Thompson (0112230676) uploaded a document.', time: '1 hour ago', read: false, targetRole: 'officer' },
@@ -155,11 +163,10 @@ const AVAILABLE_SLOTS = [
   { id: 4, time: '02:00 PM' },
 ];
 
-// --- 2. UTILITIES ---
+// --- 2. UTILITIES & SHARED COMPONENTS ---
+
 const isPositiveStatus = (status) => ['Cleared', 'Submitted', 'Returned', 'Passed', 'None', 'Active', 'Confirmed', 'Approved'].includes(status);
 const getInitials = (name) => name ? name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'U';
-
-// --- 3. SHARED COMPONENTS ---
 
 const Button = ({ children, variant = 'primary', className = '', onClick, disabled, icon: Icon }) => {
   const baseStyle = "px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer";
@@ -167,7 +174,8 @@ const Button = ({ children, variant = 'primary', className = '', onClick, disabl
     primary: "bg-blue-700 text-white hover:bg-blue-800 shadow-lg shadow-blue-200", 
     secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50",
     danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100",
-    ghost: "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+    ghost: "text-slate-500 hover:text-slate-800 hover:bg-slate-100",
+    emergency: "bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-200 border border-rose-500 animate-pulse-slow"
   };
 
   return (
@@ -187,7 +195,14 @@ const Card = ({ children, className = '', noPadding = false, onClick }) => (
   </div>
 );
 
-const StatusBadge = ({ status }) => {
+const StatusBadge = ({ status, isEmergency }) => {
+  if (isEmergency) {
+      return (
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1.5 w-fit whitespace-nowrap bg-rose-600 text-white border-rose-700 animate-pulse">
+            <Siren size={14} /> EMERGENCY
+        </span>
+      )
+  }
   const styles = {
     Approved: "bg-emerald-100 text-emerald-700 border-emerald-200", 
     Confirmed: "bg-blue-100 text-blue-700 border-blue-200", 
@@ -224,7 +239,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   );
 };
 
-// --- 4. VIEW COMPONENTS ---
+// --- 3. VIEW COMPONENTS ---
 
 const ProfileView = ({ user }) => {
     return (
@@ -296,13 +311,46 @@ const ProfileView = ({ user }) => {
     );
 };
 
-const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem, onNavigate, addNotification }) => {
+const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, setEmergencyRequests, updateClearanceItem, onNavigate, addNotification, config }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(null);
   const [uploading, setUploading] = useState(null);
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [emergencyForm, setEmergencyForm] = useState({ type: 'Medical', reason: '', date: '', phone: '', file: null });
 
-  const myItems = useMemo(() => clearanceItems.filter(item => item.studentId === studentProfile.studentId), [clearanceItems, studentProfile]);
+  const activeEmergency = emergencyRequests.find(req => req.studentId === studentProfile.studentId && req.status !== 'Closed');
   
-  // Strict 'Approved' check for accuracy
+  const submitEmergencyRequest = (e) => {
+      e.preventDefault();
+      if(studentProfile.emergencyQuotaUsed >= config.maxEmergencyRequestsPerYear) {
+          alert("Yearly emergency quota exceeded.");
+          return;
+      }
+      const newRequest = {
+          id: Date.now(),
+          studentId: studentProfile.studentId,
+          ...emergencyForm,
+          submissionTime: new Date(),
+          status: 'Active',
+          approvals: { dept: 'Pending', library: 'Pending', hostel: 'Pending', finance: 'Pending' }
+      };
+      setEmergencyRequests(prev => [...prev, newRequest]);
+      setShowEmergencyModal(false);
+      addNotification({ title: 'Emergency Request Submitted', msg: 'Your request is being processed on priority.', targetRole: 'student', targetId: studentProfile.studentId });
+      addNotification({ title: '🚨 Emergency Alert', msg: `${studentProfile.name} initiated emergency clearance.`, targetRole: 'officer' });
+  };
+
+  const myItems = useMemo(() => {
+      const items = clearanceItems.filter(item => item.studentId === studentProfile.studentId);
+      return items.sort((a, b) => {
+          const getScore = (status) => {
+              if (status === 'Rejected') return 0;
+              if (status === 'Approved') return 2;
+              return 1; 
+          };
+          return getScore(a.status) - getScore(b.status);
+      });
+  }, [clearanceItems, studentProfile]);
+  
   const completedCount = myItems.filter(i => i.status === 'Approved').length;
   const totalItems = myItems.length;
   const progress = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
@@ -313,37 +361,15 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
   const handleUpload = (id) => {
     setUploading(id);
     setTimeout(() => {
-      updateClearanceItem(id, { 
-          status: 'Reviewing', 
-          note: 'Document uploaded. Waiting for officer review.',
-          uploadedFile: 'Payment_Receipt_Nov2025.pdf' 
-      });
-      const item = myItems.find(i => i.id === id);
-      addNotification({
-          title: 'Document Uploaded',
-          msg: `You uploaded a document for ${item.unit}.`,
-          targetRole: 'student',
-          targetId: studentProfile.studentId
-      });
-      addNotification({
-          title: 'Action Required',
-          msg: `${studentProfile.name} (${studentProfile.studentId}) uploaded proof for ${item.unit}.`,
-          targetRole: 'officer'
-      });
+      updateClearanceItem(id, { status: 'Reviewing', note: 'Document uploaded.', uploadedFile: 'Proof.pdf' });
+      addNotification({ title: 'Document Uploaded', msg: `You uploaded a document for verification.`, targetRole: 'student', targetId: studentProfile.studentId });
       setUploading(null);
     }, 1500);
   };
 
   const handlePay = (id) => {
-    const unitName = myItems.find(i => i.id === id).unit;
-    updateClearanceItem(id, { 
-        paid: true, 
-        fee: 0, 
-        status: 'Pending', 
-        docRequired: true, 
-        note: 'Payment successful. Please upload payment receipt for verification.' 
-    });
-    addNotification({ title: 'Payment Successful', msg: `Payment to ${unitName} successful. Upload receipt now.`, targetRole: 'student', targetId: studentProfile.studentId });
+    updateClearanceItem(id, { paid: true, fee: 0, status: 'Pending', docRequired: true, note: 'Payment successful.' });
+    addNotification({ title: 'Payment Successful', msg: `Payment successful.`, targetRole: 'student', targetId: studentProfile.studentId });
     setShowPaymentModal(null);
   };
 
@@ -366,6 +392,19 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
 
   return (
     <div className="space-y-8 animate-in fade-in">
+      {activeEmergency && (
+          <div className="bg-rose-50 border-l-4 border-rose-500 p-4 rounded-r-lg shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                  <h3 className="text-rose-800 font-bold flex items-center gap-2"><Siren size={20} className="animate-pulse"/> Emergency Clearance Active</h3>
+                  <p className="text-sm text-rose-600 mt-1">Reason: <span className="font-medium">{activeEmergency.reason}</span> • Type: {activeEmergency.type}</p>
+              </div>
+              <div className="text-right">
+                  <span className="text-xs uppercase font-bold text-rose-400 block">SLA Timer</span>
+                  <span className="text-2xl font-mono font-bold text-rose-700"><Timer className="inline mb-1 mr-1" size={20}/>18:42:12</span>
+              </div>
+          </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="col-span-2 p-6 bg-gradient-to-br from-blue-900 to-indigo-900 text-white border-none relative overflow-hidden group hover:shadow-2xl hover:scale-[1.01]">
           <div className="flex flex-col md:flex-row justify-between items-center relative z-10 gap-8">
@@ -379,69 +418,37 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
                  <div><span className="block text-xs opacity-50 uppercase">Batch</span>{studentProfile.batch || 'N/A'}</div>
                  <div><span className="block text-xs opacity-50 uppercase">Semester</span>{studentProfile.semester || 'N/A'}</div>
                  <div><span className="block text-xs opacity-50 uppercase">Status</span><span className="text-blue-300 font-bold">Active</span></div>
-                 
                  <div className="col-span-2 mt-4 pt-4 border-t border-white/10">
                     {isCleared ? (
-                        <div className="flex items-center gap-2 text-emerald-300 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20">
-                            <CheckCircle size={20} />
-                            <span className="font-bold uppercase tracking-wide">All Dues Cleared</span>
-                        </div>
+                        <div className="flex items-center gap-2 text-emerald-300 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20"><CheckCircle size={20} /><span className="font-bold uppercase tracking-wide">All Dues Cleared</span></div>
                     ) : (
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                            <span className="text-xs opacity-50 uppercase">Financial Status</span>
-                           {totalDue > 0 ? (
-                               <div className="flex items-center gap-3 text-amber-300 bg-amber-500/20 px-4 py-2 rounded-xl border border-amber-500/30 animate-pulse-slow">
-                                   <AlertCircle size={24} />
-                                   <div>
-                                       <span className="text-[10px] uppercase font-bold opacity-80 block leading-tight">Total Payable</span>
-                                       <span className="text-xl font-extrabold tracking-tight">TK {totalDue.toFixed(2)}</span>
-                                   </div>
-                               </div>
-                           ) : (
-                               <span className="text-blue-300 font-bold flex items-center gap-2 bg-blue-500/20 px-3 py-1 rounded-full text-xs">
-                                   <Clock size={14} /> In Progress
-                               </span>
-                           )}
+                           {totalDue > 0 ? (<div className="flex items-center gap-3 text-amber-300 bg-amber-500/20 px-4 py-2 rounded-xl border border-amber-500/30 animate-pulse-slow"><AlertCircle size={24} /><div><span className="text-[10px] uppercase font-bold opacity-80 block leading-tight">Total Payable</span><span className="text-xl font-extrabold tracking-tight">TK {totalDue.toFixed(2)}</span></div></div>) : (<span className="text-blue-300 font-bold flex items-center gap-2 bg-blue-500/20 px-3 py-1 rounded-full text-xs"><Clock size={14} /> In Progress</span>)}
                         </div>
                     )}
                  </div>
               </div>
-              <div className="flex gap-3 mt-4">
-                <Button onClick={() => onNavigate('appointments')} variant="secondary" className="bg-white/10 border-white/10 text-white hover:bg-white/20">
-                  <Calendar size={16} /> Book Appointment
-                </Button>
-                <Button onClick={() => onNavigate('guidelines')} variant="secondary" className="bg-white/10 border-white/10 text-white hover:bg-white/20">
-                  <FileText size={16} /> Guidelines
-                </Button>
+              <div className="flex flex-wrap gap-3 mt-4">
+                <Button onClick={() => onNavigate('appointments')} variant="secondary" className="bg-white/10 border-white/10 text-white hover:bg-white/20"><Calendar size={16} /> Book Appointment</Button>
+                {!activeEmergency && !isCleared && (<Button onClick={() => setShowEmergencyModal(true)} variant="emergency" className="border-white/20"><Siren size={16} /> Emergency Clearance</Button>)}
               </div>
             </div>
-            
             <div className="relative flex-shrink-0 mt-6 md:mt-0">
               <svg viewBox={`0 0 ${baseSize} ${baseSize}`} className="transform -rotate-90 w-32 h-32 md:w-48 md:h-48 transition-all duration-300">
-                <defs>
-                    <linearGradient id="royalBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#60a5fa" /> 
-                        <stop offset="50%" stopColor="#3b82f6" /> 
-                        <stop offset="100%" stopColor="#2563eb" /> 
-                    </linearGradient>
-                </defs>
+                <defs><linearGradient id="royalBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#60a5fa" /><stop offset="50%" stopColor="#3b82f6" /><stop offset="100%" stopColor="#2563eb" /></linearGradient></defs>
                 <circle cx={center} cy={center} r={radius} stroke="currentColor" strokeWidth={strokeWidth} fill="transparent" className="text-white/10" />
                 <circle cx={center} cy={center} r={radius} stroke="url(#royalBlueGradient)" strokeWidth={strokeWidth} fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - (circumference * progress) / 100} className="transition-all duration-1000 ease-out" strokeLinecap="round"/>
               </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl md:text-4xl font-bold transition-all duration-300 text-white">{progress}%</span>
-                  <span className="text-[10px] md:text-xs uppercase tracking-wider text-blue-200">Cleared</span>
-              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-2xl md:text-4xl font-bold transition-all duration-300 text-white">{progress}%</span><span className="text-[10px] md:text-xs uppercase tracking-wider text-blue-200">Cleared</span></div>
             </div>
           </div>
         </Card>
         <Card className="p-6 flex flex-col justify-center items-center text-center bg-white border-blue-100 hover:border-blue-300">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-4 text-blue-600 shadow-inner"><GraduationCap size={32} /></div>
           <h3 className="text-lg font-bold text-slate-800">Final Clearance</h3>
-          <p className="text-sm text-slate-500 mt-2 mb-4">Certificate available upon 100% completion.</p>
-          <Button disabled={!isCleared} onClick={() => onNavigate('certificate')} className="w-full">
-             {isCleared ? 'Download Certificate' : `${totalItems - completedCount} Steps Remaining`}
-          </Button>
+          <p className="text-sm text-slate-500 mt-2 mb-4">Certificate available upon 100% completion or via Emergency Override.</p>
+          <Button disabled={!isCleared && (!activeEmergency || activeEmergency.status !== 'Approved')} onClick={() => onNavigate('certificate')} className="w-full">{isCleared ? 'Download Certificate' : activeEmergency?.status === 'Approved' ? 'Download Provisional' : `${totalItems - completedCount} Steps Remaining`}</Button>
         </Card>
       </div>
 
@@ -449,38 +456,33 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
         <h3 className="text-xl font-bold text-slate-800 mb-4 px-1">Clearance Modules</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {myItems.map((item) => (
-            <Card key={item.id} className={`p-5 flex flex-col h-full border-l-4 ${item.status === 'Approved' ? 'border-l-emerald-500' : item.status === 'Rejected' ? 'border-l-rose-500' : 'border-l-amber-500'}`}>
+            <Card key={item.id} className={`p-5 flex flex-col h-full border-l-4 ${item.status === 'Approved' ? 'border-l-emerald-500' : item.status === 'Rejected' ? 'border-l-rose-500' : 'border-l-amber-500'} ${activeEmergency ? 'ring-2 ring-rose-100' : ''}`}>
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-slate-50 rounded-xl shadow-sm border border-slate-100">{getIconForType(item.type)}</div>
                   <div><h4 className="font-bold text-slate-800 text-lg">{item.unit}</h4><p className="text-xs text-slate-500 font-medium tracking-wide uppercase">{item.type} Module</p></div>
                 </div>
-                <StatusBadge status={item.status} />
+                <StatusBadge status={item.status} isEmergency={!!activeEmergency && item.status !== 'Approved'} />
               </div>
               <div className="flex-1 space-y-4">
-                {item.note && (
-                    <div className={`p-3 rounded-lg border text-sm ${item.status === 'Rejected' ? 'bg-rose-50 border-rose-100 text-rose-800' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
-                        <div className="flex items-center gap-2 mb-1">{item.status === 'Rejected' && <AlertCircle size={14} />}<span className="font-bold text-xs uppercase">{item.status === 'Rejected' ? 'Rejection Reason' : 'Officer Note'}</span></div>"{item.note}"
-                    </div>
-                )}
-                {item.breakdown && (
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Fee Breakdown</p>
-                        {item.breakdown.map((fee, idx) => (<div key={idx} className="flex justify-between text-sm mb-1"><span className="text-slate-600">{fee.label}</span><span className="font-mono font-medium">TK {fee.amount.toFixed(2)}</span></div>))}
-                        <div className="border-t border-slate-200 mt-2 pt-2 flex justify-between font-bold text-slate-800"><span>Total Due</span><span>TK {item.fee.toFixed(2)}</span></div>
-                    </div>
-                )}
+                {item.note && (<div className={`p-3 rounded-lg border text-sm ${item.status === 'Rejected' ? 'bg-rose-50 border-rose-100 text-rose-800' : 'bg-slate-50 border-slate-100 text-slate-600'}`}><div className="flex items-center gap-2 mb-1">{item.status === 'Rejected' && <AlertCircle size={14} />}<span className="font-bold text-xs uppercase">{item.status === 'Rejected' ? 'Rejection Reason' : 'Officer Note'}</span></div>"{item.note}"</div>)}
+                {item.breakdown && (<div className="bg-slate-50 rounded-xl p-4 border border-slate-100"><p className="text-xs font-bold text-slate-500 uppercase mb-2">Fee Breakdown</p>{item.breakdown.map((fee, idx) => (<div key={idx} className="flex justify-between text-sm mb-1"><span className="text-slate-600">{fee.label}</span><span className="font-mono font-medium">TK {fee.amount.toFixed(2)}</span></div>))}<div className="border-t border-slate-200 mt-2 pt-2 flex justify-between font-bold text-slate-800"><span>Total Due</span><span>TK {item.fee.toFixed(2)}</span></div></div>)}
                 {item.checklist && (
                     <div className="space-y-2 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                        {item.checklist.map((check, idx) => (<div key={idx} className="flex items-center gap-3 text-sm">{isPositiveStatus(check.status) ? <CheckCircle size={16} className="text-emerald-500" /> : <AlertCircle size={16} className="text-amber-500" />}<span className={isPositiveStatus(check.status) ? 'text-slate-400 line-through' : 'text-slate-700'}>{check.label}</span></div>))}
+                        {[...item.checklist].sort((a, b) => {
+                            const aDone = isPositiveStatus(a.status);
+                            const bDone = isPositiveStatus(b.status);
+                            if (aDone === bDone) return 0;
+                            return aDone ? 1 : -1; 
+                        }).map((check, idx) => (
+                            <div key={idx} className="flex items-center gap-3 text-sm">{isPositiveStatus(check.status) ? <CheckCircle size={16} className="text-emerald-500" /> : <AlertCircle size={16} className="text-amber-500" />}<span className={isPositiveStatus(check.status) ? 'text-slate-400 line-through' : 'text-slate-700'}>{check.label}</span></div>
+                        ))}
                     </div>
                 )}
               </div>
               <div className="mt-5 pt-4 border-t border-slate-100">
                 {item.fee > 0 && !item.paid ? <Button onClick={() => setShowPaymentModal(item)} className="w-full" variant="danger">Pay TK {item.fee.toFixed(2)} Now</Button> : 
-                 item.status === 'Rejected' || (item.status === 'Pending' && (item.docRequired || item.type === 'Administrative')) ? 
-                 <Button variant="secondary" className="w-full hover:bg-slate-100 hover:border-slate-300" onClick={() => handleUpload(item.id)}>{uploading === item.id ? 'Uploading...' : <><UploadCloud size={16} /> {item.type === 'Administrative' ? 'Submit Registration Card' : 'Upload Proof'}</>}</Button> : 
-                 <div className="text-center text-xs text-slate-400 py-2">Updated: {new Date().toLocaleTimeString()}</div>}
+                 item.status === 'Rejected' || (item.status === 'Pending' && (item.docRequired || item.type === 'Administrative')) ? <Button variant="secondary" className="w-full hover:bg-slate-100 hover:border-slate-300" onClick={() => handleUpload(item.id)}>{uploading === item.id ? 'Uploading...' : <><UploadCloud size={16} /> {item.type === 'Administrative' ? 'Submit Registration Card' : 'Upload Proof'}</>}</Button> : <div className="text-center text-xs text-slate-400 py-2">Updated: {new Date().toLocaleTimeString()}</div>}
               </div>
             </Card>
           ))}
@@ -499,6 +501,20 @@ const StudentDashboard = ({ studentProfile, clearanceItems, updateClearanceItem,
           </div>
         )}
       </Modal>
+
+      <Modal isOpen={showEmergencyModal} onClose={() => setShowEmergencyModal(false)} title="🚨 Emergency Clearance Request">
+          <form onSubmit={submitEmergencyRequest} className="space-y-4">
+              <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-sm border border-amber-100 flex gap-2"><ShieldAlert className="flex-shrink-0" size={20} /><p>Emergency clearance is strictly for medical, job, or travel urgency. <strong>Quota: {config.maxEmergencyRequestsPerYear - studentProfile.emergencyQuotaUsed}/{config.maxEmergencyRequestsPerYear} remaining.</strong></p></div>
+              <div><label className="block text-sm font-bold text-slate-700 mb-1">Request Type</label><select className="w-full border p-2 rounded bg-white" required value={emergencyForm.type} onChange={e => setEmergencyForm({...emergencyForm, type: e.target.value})}><option>Medical Emergency</option><option>Job Joining</option><option>Visa/Travel</option><option>Other</option></select></div>
+              <div><label className="block text-sm font-bold text-slate-700 mb-1">Reason for Urgency</label><textarea required className="w-full border p-2 rounded" rows="3" placeholder="Describe why you need expedited clearance..." value={emergencyForm.reason} onChange={e => setEmergencyForm({...emergencyForm, reason: e.target.value})} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                  <div><label className="block text-sm font-bold text-slate-700 mb-1">Departure/Joining Date</label><input required type="date" className="w-full border p-2 rounded" value={emergencyForm.date} onChange={e => setEmergencyForm({...emergencyForm, date: e.target.value})} /></div>
+                  <div><label className="block text-sm font-bold text-slate-700 mb-1">Emergency Contact</label><input required type="tel" placeholder="+880..." className="w-full border p-2 rounded" value={emergencyForm.phone} onChange={e => setEmergencyForm({...emergencyForm, phone: e.target.value})} /></div>
+              </div>
+              <div><label className="block text-sm font-bold text-slate-700 mb-1">Supporting Document</label><input required type="file" className="w-full border p-2 rounded bg-slate-50" /></div>
+              <div className="pt-4"><Button type="submit" variant="emergency" className="w-full">Submit Priority Request</Button></div>
+          </form>
+      </Modal>
     </div>
   );
 };
@@ -507,53 +523,11 @@ const GuidelinesView = () => {
   return (
     <div className="space-y-6 animate-in fade-in">
       <h2 className="text-2xl font-bold text-slate-800">Clearance Guidelines</h2>
-      <p className="text-slate-600">Please follow the instructions below for each department to ensure a smooth clearance process.</p>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><BookOpen size={20}/></div>
-            <h3 className="font-bold text-slate-800">Library Services</h3>
-          </div>
-          <ul className="list-disc pl-5 text-sm text-slate-600 space-y-2">
-            <li>Return all borrowed books to the central library.</li>
-            <li>Pay any outstanding fines for late returns or damaged books.</li>
-            <li>Ensure your library account status is marked as 'Active' or 'Closed' by the librarian.</li>
-          </ul>
-        </Card>
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><CreditCard size={20}/></div>
-            <h3 className="font-bold text-slate-800">Accounts / Finance</h3>
-          </div>
-          <ul className="list-disc pl-5 text-sm text-slate-600 space-y-2">
-            <li>Clear all tuition fees up to the final semester.</li>
-            <li>Pay exam fees and any retake fees if applicable.</li>
-            <li>Clear miscellaneous dues (ID card fines, lab breakage fees, etc.).</li>
-          </ul>
-        </Card>
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><Home size={20}/></div>
-            <h3 className="font-bold text-slate-800">Hostel Management</h3>
-          </div>
-          <ul className="list-disc pl-5 text-sm text-slate-600 space-y-2">
-            <li>Pay all hostel rent and mess dues.</li>
-            <li>Hand over your room keys to the warden.</li>
-            <li>Get a room condition check to ensure no damages.</li>
-          </ul>
-        </Card>
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><Beaker size={20}/></div>
-            <h3 className="font-bold text-slate-800">Departmental</h3>
-          </div>
-          <ul className="list-disc pl-5 text-sm text-slate-600 space-y-2">
-            <li>Return all lab equipment and kits.</li>
-            <li>Clear departmental society dues.</li>
-            <li>Obtain final confirmation/signature from the Head of Department (HOD).</li>
-          </ul>
-        </Card>
+        <Card className="p-6"><div className="flex items-center gap-3 mb-4"><div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><BookOpen size={20}/></div><h3 className="font-bold text-slate-800">Library Services</h3></div><ul className="list-disc pl-5 text-sm text-slate-600 space-y-2"><li>Return all borrowed books.</li><li>Pay outstanding fines.</li></ul></Card>
+        <Card className="p-6"><div className="flex items-center gap-3 mb-4"><div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><CreditCard size={20}/></div><h3 className="font-bold text-slate-800">Accounts</h3></div><ul className="list-disc pl-5 text-sm text-slate-600 space-y-2"><li>Clear tuition fees.</li><li>Pay exam fees.</li></ul></Card>
+        <Card className="p-6"><div className="flex items-center gap-3 mb-4"><div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><Home size={20}/></div><h3 className="font-bold text-slate-800">Hostel</h3></div><ul className="list-disc pl-5 text-sm text-slate-600 space-y-2"><li>Pay rent and mess dues.</li><li>Return room keys.</li></ul></Card>
+        <Card className="p-6"><div className="flex items-center gap-3 mb-4"><div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><Beaker size={20}/></div><h3 className="font-bold text-slate-800">Departmental</h3></div><ul className="list-disc pl-5 text-sm text-slate-600 space-y-2"><li>Return lab equipment.</li><li>Clear society dues.</li></ul></Card>
       </div>
     </div>
   );
@@ -567,16 +541,11 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
 
   const myAppointments = appointments.filter(a => a.studentId === studentProfile.studentId);
   
-  // Dynamic slot availability (Double booking prevention)
   const getSlotsForDate = (date, officer) => {
       const takenTimes = appointments
           .filter(a => a.date === date && a.officer === officer && a.status !== 'Declined')
           .map(a => a.time);
-      
-      return AVAILABLE_SLOTS.map(slot => ({
-          ...slot,
-          available: !takenTimes.includes(slot.time)
-      }));
+      return AVAILABLE_SLOTS.map(slot => ({ ...slot, available: !takenTimes.includes(slot.time) }));
   };
 
   const currentSlots = useMemo(() => getSlotsForDate(selectedDate, unit), [selectedDate, unit, appointments]);
@@ -587,16 +556,7 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
     setTimeout(() => {
       const slotTime = currentSlots.find(s => s.id === selectedSlot)?.time;
       if (!slotTime) return;
-
-      const newAppt = {
-        id: Date.now(),
-        studentId: studentProfile.studentId,
-        studentName: studentProfile.name,
-        officer: unit,
-        date: selectedDate,
-        time: slotTime,
-        status: 'Pending'
-      };
+      const newAppt = { id: Date.now(), studentId: studentProfile.studentId, studentName: studentProfile.name, officer: unit, date: selectedDate, time: slotTime, status: 'Pending' };
       addAppointment(newAppt);
       setBooked(false);
       setSelectedSlot(null);
@@ -605,9 +565,7 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
 
   return (
     <div className="space-y-6 animate-in fade-in">
-      <div className="flex justify-between items-center">
-        <div><h2 className="text-2xl font-bold text-slate-800">Book Appointment</h2><p className="text-slate-500">Schedule a meeting with officers</p></div>
-      </div>
+      <div className="flex justify-between items-center"><div><h2 className="text-2xl font-bold text-slate-800">Book Appointment</h2><p className="text-slate-500">Schedule a meeting with officers</p></div></div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-6">
           <Card className="p-6">
@@ -616,9 +574,7 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
             <div className="mt-6 space-y-3">
               <h4 className="text-sm font-medium text-slate-500">Department</h4>
               <select className="w-full p-3 border rounded-xl bg-white" value={unit} onChange={e => setUnit(e.target.value)}>
-                  {['Bursary Office', 'Library Services', 'Department Head', 'Hostel Management', 'Registrar Office'].map(u => (
-                      <option key={u}>{u}</option>
-                  ))}
+                  {['Bursary Office', 'Library Services', 'Department Head', 'Hostel Management', 'Registrar Office'].map(u => (<option key={u}>{u}</option>))}
               </select>
             </div>
           </Card>
@@ -640,17 +596,8 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Clock size={18} /> Available Slots</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {currentSlots.map(slot => (
-              <button 
-                key={slot.id} 
-                disabled={!slot.available}
-                onClick={() => setSelectedSlot(slot.id)} 
-                className={`p-4 rounded-xl border text-center transition-all ${
-                    !slot.available ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-100' :
-                    selectedSlot === slot.id ? 'bg-blue-600 text-white shadow-lg' : 'hover:border-blue-500 hover:shadow-md bg-white'
-                }`}
-              >
-                <div className="text-lg font-bold">{slot.time}</div>
-                <div className="text-xs mt-1 opacity-80">{slot.available ? 'Available' : 'Booked'}</div>
+              <button key={slot.id} disabled={!slot.available} onClick={() => setSelectedSlot(slot.id)} className={`p-4 rounded-xl border text-center transition-all ${!slot.available ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-100' : selectedSlot === slot.id ? 'bg-blue-600 text-white shadow-lg' : 'hover:border-blue-500 hover:shadow-md bg-white'}`}>
+                <div className="text-lg font-bold">{slot.time}</div><div className="text-xs mt-1 opacity-80">{slot.available ? 'Available' : 'Booked'}</div>
               </button>
             ))}
           </div>
@@ -664,36 +611,36 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
   );
 };
 
-const CertificateView = ({ studentProfile }) => (
+const CertificateView = ({ studentProfile, activeEmergency }) => {
+  const isEmergency = activeEmergency && activeEmergency.status === 'Approved';
+  const type = isEmergency ? "PROVISIONAL EMERGENCY" : "OFFICIAL";
+  return (
   <div className="flex justify-center p-4 print:p-0 print:m-0 print:absolute print:top-0 print:left-0 print:w-full print:h-full print:z-[9999] print:bg-white">
     <style>{`@media print { body { -webkit-print-color-adjust: exact; } body * { visibility: hidden; } #certificate-container, #certificate-container * { visibility: visible; } #certificate-container { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; box-shadow: none; border: none; } #print-btn { display: none; } }`}</style>
-    <div id="certificate-container" className="bg-white shadow-2xl w-[700px] min-h-[900px] p-12 relative border border-slate-200 text-center print:shadow-none print:border-none print:w-full">
+    <div id="certificate-container" className="bg-white shadow-2xl w-[700px] min-h-[900px] p-12 relative border border-slate-200 text-center print:shadow-none print:border-none print:w-full overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-4 bg-blue-900"></div>
-      <div className="mb-12">
+      {isEmergency && <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] z-0"><span className="text-9xl font-black -rotate-45 transform uppercase text-slate-900">PROVISIONAL</span></div>}
+      <div className="mb-12 relative z-10">
         <div className="w-20 h-20 bg-slate-900 rounded-full mx-auto mb-4 flex items-center justify-center text-white font-serif text-3xl">U</div>
         <h1 className="text-3xl font-serif font-bold text-slate-900 uppercase tracking-widest">University of Tech</h1>
         <p className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500">Office of the Registrar</p>
       </div>
-      <div className="mb-12 border-b-2 border-slate-100 pb-8">
-        <h2 className="text-4xl font-serif text-blue-900 mb-6 italic">Certificate of Clearance</h2>
+      <div className="mb-12 border-b-2 border-slate-100 pb-8 relative z-10">
+        <h2 className="text-4xl font-serif text-blue-900 mb-6 italic">{type} Clearance Certificate</h2>
         <p className="text-slate-600 text-lg">This is to certify that</p>
         <p className="text-3xl font-bold text-slate-800 my-4 font-serif">{studentProfile.name}</p>
         <p className="text-slate-600">Matriculation Number: <strong>{studentProfile.studentId}</strong></p>
-        <p className="text-slate-600 mt-2">Has satisfactorily fulfilled all financial and non-financial obligations to the university and is hereby cleared for graduation.</p>
+        {isEmergency ? (
+            <div className="bg-amber-50 border border-amber-200 p-4 mt-4 rounded text-sm text-amber-900 max-w-lg mx-auto"><strong>Conditional Clearance:</strong> This certificate is issued under emergency protocol ({activeEmergency.type}). Final verification of dues is pending. Validity expires in 30 days.</div>
+        ) : (<p className="text-slate-600 mt-2">Has satisfactorily fulfilled all financial and non-financial obligations to the university and is hereby cleared for graduation.</p>)}
       </div>
-      <div className="grid grid-cols-2 gap-12 text-left mb-16">
+      <div className="grid grid-cols-2 gap-12 text-left mb-16 relative z-10">
         <div><p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Department</p><p className="font-medium">{studentProfile.dept || 'N/A'}</p></div>
-        <div><p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Date of Issue</p><p className="font-medium">{SYSTEM_DATE}</p></div>
+        <div><p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Date of Issue</p><p className="font-medium">{new Date().toDateString()}</p></div>
       </div>
-      <div className="flex justify-between items-end mt-auto">
+      <div className="flex justify-between items-end mt-auto relative z-10">
         <div className="text-center relative">
-            <div className="w-48 border-b border-slate-800 mb-2 mx-auto relative">
-                {/* Simulated Signature using SVG Path */}
-                <svg viewBox="0 0 200 60" className="h-16 absolute bottom-0 left-1/2 transform -translate-x-1/2 text-blue-900 pointer-events-none">
-                    <path d="M10,40 Q40,10 70,40 T130,40 T180,20" fill="none" stroke="currentColor" strokeWidth="2" />
-                    <text x="30" y="45" fontFamily="cursive" fontSize="20" fill="currentColor" style={{fontStyle: 'italic'}}>Dr. Al-Fayed</text> 
-                </svg>
-            </div>
+            <div className="w-48 border-b border-slate-800 mb-2 mx-auto relative"><svg viewBox="0 0 200 60" className="h-16 absolute bottom-0 left-1/2 transform -translate-x-1/2 text-blue-900 pointer-events-none"><path d="M10,40 Q40,10 70,40 T130,40 T180,20" fill="none" stroke="currentColor" strokeWidth="2" /><text x="30" y="45" fontFamily="cursive" fontSize="20" fill="currentColor" style={{fontStyle: 'italic'}}>Dr. Al-Fayed</text></svg></div>
             <p className="text-xs font-bold uppercase">Registrar Signature</p>
         </div>
         <div className="border-4 border-slate-900 p-2"><QrCode size={80} /></div>
@@ -702,11 +649,146 @@ const CertificateView = ({ studentProfile }) => (
     </div>
     <div id="print-btn" className="fixed bottom-8 right-8"><Button className="shadow-2xl" onClick={() => window.print()}><Printer size={18} /> Print Certificate</Button></div>
   </div>
-);
+)};
 
-// --- 5. ADMIN MODULES ---
+const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification, emergencyRequests }) => {
+  const [selectedUnit, setSelectedUnit] = useState('Registrar Office');
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [comment, setComment] = useState('');
 
-const AdminUserManagement = ({ users, setUsers, addNotification, setClearanceDatabase, setAppointments }) => {
+  const queue = clearanceItems.filter(item => item.unit === selectedUnit && (item.status === 'Pending' || item.status === 'Reviewing' || item.status === 'Submitted'));
+  const urgentRequests = emergencyRequests.filter(req => req.status === 'Active');
+  const studentFullClearance = selectedRequest ? clearanceItems.filter(item => item.studentId === selectedRequest.studentId && item.unit !== 'Registrar Office') : [];
+  const allOthersApproved = studentFullClearance.every(item => item.status === 'Approved');
+
+  const handleAction = (status) => {
+    if (!selectedRequest) return;
+    updateClearanceItem(selectedRequest.id, { status, note: comment || (status === 'Rejected' ? 'Rejected by officer' : 'Approved by officer') });
+    addNotification({ title: `Clearance ${status}`, msg: `Your request for ${selectedUnit} has been ${status}.`, targetRole: 'student', targetId: selectedRequest.studentId });
+    setSelectedRequest(null);
+    setComment('');
+  };
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-140px)]">
+      {urgentRequests.length > 0 && (
+          <div className="bg-rose-600 text-white p-3 flex justify-between items-center animate-pulse-slow">
+              <span className="font-bold flex items-center gap-2"><Siren size={18}/> {urgentRequests.length} EMERGENCY REQUESTS PENDING</span>
+              <span className="text-xs bg-white/20 px-2 py-1 rounded">SLA: &lt; 24h</span>
+          </div>
+      )}
+      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-4 overflow-x-auto">
+         <span className="text-xs font-bold uppercase text-slate-500 whitespace-nowrap">Select Dept:</span>
+         {['Registrar Office', 'Department Head', 'Library Services', 'Bursary Office', 'Hostel Management'].map(unit => (<button key={unit} onClick={() => { setSelectedUnit(unit); setSelectedRequest(null); }} className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedUnit === unit ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{unit}</button>))}
+      </div>
+      <div className="flex flex-1 overflow-hidden">
+        <Card className="w-1/3 flex flex-col rounded-none border-r border-t-0 border-b-0 border-l-0" noPadding>
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center"><h3 className="font-bold text-slate-700">{selectedUnit} Queue</h3><span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">{queue.length}</span></div>
+            <div className="overflow-y-auto flex-1">
+            {queue.map(item => {
+                const isUrgent = urgentRequests.some(r => r.studentId === item.studentId);
+                return (
+                <div key={item.id} onClick={() => setSelectedRequest(item)} className={`p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 ${selectedRequest?.id === item.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'} ${isUrgent ? 'bg-rose-50 border-l-rose-500' : ''}`}>
+                    <div className="flex justify-between items-start mb-1"><h4 className="font-bold text-sm text-slate-700 flex items-center gap-2">{item.studentName}{isUrgent && <Siren size={14} className="text-rose-600" />}</h4><StatusBadge status={item.status} /></div>
+                    <p className="text-xs text-slate-500">{item.studentId} • Batch {item.batch || 'N/A'}</p>
+                    {isUrgent && <p className="text-[10px] text-rose-600 font-bold mt-1">EMERGENCY PRIORITY</p>}
+                </div>
+            )})}
+            {queue.length === 0 && (<div className="p-8 text-center text-slate-400 flex flex-col items-center"><CheckCircle size={32} className="mb-2 text-emerald-200" /><p>All caught up!</p><p className="text-xs mt-1">No pending requests.</p></div>)}
+            </div>
+        </Card>
+        <div className="flex-1 p-8 overflow-y-auto bg-slate-50/50">
+            {selectedRequest ? (
+            <Card className="max-w-2xl mx-auto">
+                <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4">
+                    <div><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">{selectedRequest.studentName}{urgentRequests.some(r => r.studentId === selectedRequest.studentId) && <span className="bg-rose-100 text-rose-700 text-xs px-2 py-1 rounded border border-rose-200">EMERGENCY</span>}</h2><p className="text-slate-500 text-sm">{selectedRequest.studentId}</p></div>
+                    <div className="text-right"><span className="text-xs uppercase font-bold text-slate-400">Current Status</span><div className="mt-1"><StatusBadge status={selectedRequest.status} /></div></div>
+                </div>
+                {urgentRequests.some(r => r.studentId === selectedRequest.studentId) && (
+                    <div className="mb-6 bg-rose-50 border border-rose-100 p-4 rounded-lg">
+                        <h4 className="font-bold text-rose-800 text-sm flex items-center gap-2 mb-2"><FileWarning size={16}/> Emergency Details</h4>
+                        <div className="text-sm text-slate-700 grid grid-cols-2 gap-4">
+                            <div><span className="text-xs text-slate-500 block">Reason</span>{urgentRequests.find(r=>r.studentId === selectedRequest.studentId).reason}</div>
+                            <div><span className="text-xs text-slate-500 block">Contact</span>{urgentRequests.find(r=>r.studentId === selectedRequest.studentId).phone}</div>
+                            <div><span className="text-xs text-slate-500 block">Date Needed</span>{urgentRequests.find(r=>r.studentId === selectedRequest.studentId).date}</div>
+                            <div><span className="text-xs text-slate-500 block">Proof</span><a href="#" className="text-blue-600 underline flex items-center gap-1"><ExternalLink size={12}/> View Doc</a></div>
+                        </div>
+                    </div>
+                )}
+                <div className="space-y-6 mb-8">
+                    {selectedUnit === 'Registrar Office' && (<div className="bg-slate-100 rounded-lg p-4 border border-slate-200"><div className="flex justify-between items-center mb-3"><h4 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2"><Stamp size={16} /> Cross-Department Clearance</h4>{allOthersApproved ? <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">All Signatures Verified</span> : <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Pending Signatures</span>}</div><div className="space-y-1">{studentFullClearance.map(item => (<div key={item.id} className="flex justify-between text-sm p-2 bg-white rounded border border-slate-100"><span className="text-slate-600">{item.unit}</span><StatusBadge status={item.status} /></div>))}</div></div>)}
+                    {selectedRequest.status === 'Reviewing' && selectedRequest.uploadedFile && (
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="p-2 bg-white rounded border border-blue-100"><FileText size={20} className="text-blue-600" /></div><div><p className="text-sm font-bold text-slate-700">Proof of Payment</p><p className="text-xs text-blue-600 underline cursor-pointer">{selectedRequest.uploadedFile}</p></div></div><Button variant="secondary" className="h-8 text-xs" onClick={() => alert("Opening document preview...")} icon={Eye}>View</Button></div>
+                    )}
+                    {selectedRequest.checklist && (<div><h4 className="text-sm font-bold text-slate-700 uppercase mb-3">Checklist Actions</h4><div className="space-y-2">{selectedRequest.checklist.map((c, i) => (<div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"><span className="text-sm text-slate-700">{c.label}</span><span className={`text-xs font-bold px-2 py-1 rounded ${isPositiveStatus(c.status) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{c.status}</span></div>))}</div></div>)}
+                </div>
+                <div><label className="block text-sm font-bold text-slate-700 mb-2">Officer Decision</label><textarea className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none mb-4 resize-none h-24" placeholder="Enter notes..." value={comment} onChange={(e) => setComment(e.target.value)} /><div className="flex gap-4"><Button variant="danger" className="flex-1" onClick={() => handleAction('Rejected')}>Reject</Button><Button className="flex-1" onClick={() => handleAction('Approved')} disabled={selectedUnit === 'Registrar Office' && !allOthersApproved}>{selectedUnit === 'Registrar Office' && !allOthersApproved ? 'Waiting for other Depts' : 'Approve & Clear'}</Button></div></div>
+            </Card>
+            ) : (<div className="h-full flex flex-col items-center justify-center text-slate-400"><Users size={48} className="mb-4 opacity-20" /><p>Select a student from the {selectedUnit} queue.</p></div>)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const OfficerAppointments = ({ appointments, updateAppointment }) => {
+    const [selectedUnit, setSelectedUnit] = useState('Bursary Office');
+    const queue = appointments.filter(a => a.officer === selectedUnit && a.status === 'Pending');
+    const schedule = appointments.filter(a => a.officer === selectedUnit && a.status !== 'Pending'); 
+    const groupedSchedule = schedule.reduce((acc, appt) => {
+        const date = appt.date;
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(appt);
+        return acc;
+    }, {});
+    const sortedDates = Object.keys(groupedSchedule).sort();
+    const handleDecision = (id, status) => updateAppointment(id, { status });
+
+    return (
+        <div className="flex flex-col h-[calc(100vh-140px)] p-6 overflow-y-auto">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <h2 className="text-xl font-bold text-slate-800">Appointment Requests</h2>
+                <div className="flex items-center gap-2"><span className="text-sm text-slate-500">Viewing as:</span><select className="p-2 border rounded-lg bg-white text-sm font-medium" value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)}>{['Bursary Office', 'Library Services', 'Department Head', 'Hostel Management', 'Registrar Office'].map(u => (<option key={u}>{u}</option>))}</select></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                {queue.length === 0 ? (<div className="col-span-3 text-center py-8 border-2 border-dashed border-slate-200 rounded-xl"><p className="text-slate-400 italic">No pending appointments for {selectedUnit}.</p></div>) : queue.map(apt => (
+                    <Card key={apt.id} className="p-4"><div className="flex justify-between items-start mb-2"><div><h4 className="font-bold text-slate-800">{apt.studentName}</h4><p className="text-xs text-slate-500">{apt.studentId}</p></div><div className="text-right"><span className="block font-bold text-emerald-600">{apt.time}</span><span className="text-xs text-slate-400">{apt.date}</span></div></div><div className="flex gap-2 mt-4"><Button variant="secondary" className="flex-1 h-8 text-xs border-rose-200 text-rose-600 hover:bg-rose-50" onClick={() => handleDecision(apt.id, 'Declined')}><X size={14} /> Decline</Button><Button className="flex-1 h-8 text-xs" onClick={() => handleDecision(apt.id, 'Confirmed')}><Check size={14} /> Confirm</Button></div></Card>
+                ))}
+            </div>
+            <div className="mt-8 pt-8 border-t border-slate-200">
+                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><CalendarCheck size={20} className="text-blue-600"/> Appointment Schedule</h3>
+                <div className="space-y-8">{sortedDates.map(date => (<div key={date} className="relative pl-8 border-l-2 border-blue-100 last:border-l-0"><div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-100 border-2 border-blue-500"></div><h4 className="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">{new Date(date).toDateString()}</h4><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{groupedSchedule[date].map(apt => (<div key={apt.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-all flex justify-between items-center"><div><p className="font-bold text-sm text-slate-800">{apt.studentName}</p><div className="flex items-center gap-2 mt-1"><Clock size={12} className="text-slate-400"/><p className="text-xs text-slate-500 font-medium">{apt.time}</p></div><p className="text-[10px] text-slate-400 mt-1 font-mono">{apt.studentId}</p></div><StatusBadge status={apt.status} /></div>))}</div></div>))}</div>
+            </div>
+        </div>
+    );
+};
+
+const OfficerAnalytics = ({ clearanceItems }) => {
+    const [filter, setFilter] = useState('All');
+    const total = clearanceItems.length;
+    const approved = clearanceItems.filter(i => i.status === 'Approved').length;
+    const rejected = clearanceItems.filter(i => i.status === 'Rejected').length;
+    const rate = total > 0 ? Math.round((approved / total) * 100) : 0;
+    const historyItems = clearanceItems.filter(i => i.status !== 'Pending' && i.status !== 'Reviewing' && (filter === 'All' || i.status === filter));
+
+    return (
+        <div className="space-y-8 animate-in fade-in">
+            <div className="flex justify-between items-center"><div><h2 className="text-2xl font-bold text-slate-800">Analytics & History</h2><p className="text-slate-500">Overview of departmental performance and logs</p></div><div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm"><div className="p-1.5 bg-blue-50 text-blue-600 rounded"><Filter size={16} /></div><select className="text-sm font-medium text-slate-700 bg-transparent outline-none pr-2" value={filter} onChange={(e) => setFilter(e.target.value)}><option value="All">All Actions</option><option value="Approved">Approved Only</option><option value="Rejected">Rejected Only</option></select></div></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="p-5 flex items-center gap-4 border-blue-100 bg-blue-50/50"><div className="p-3 rounded-lg bg-blue-500 text-white shadow-lg shadow-blue-200"><TrendingUp size={20} /></div><div><p className="text-xs font-bold uppercase text-blue-600 mb-1">Clearance Rate</p><p className="text-2xl font-bold text-slate-800">{rate}%</p></div></Card>
+                <Card className="p-5 flex items-center gap-4 border-emerald-100 bg-emerald-50/50"><div className="p-3 rounded-lg bg-emerald-500 text-white shadow-lg shadow-emerald-200"><CheckCircle size={20} /></div><div><p className="text-xs font-bold uppercase text-emerald-600 mb-1">Approved</p><p className="text-2xl font-bold text-slate-800">{approved}</p></div></Card>
+                <Card className="p-5 flex items-center gap-4 border-rose-100 bg-rose-50/50"><div className="p-3 rounded-lg bg-rose-500 text-white shadow-lg shadow-rose-200"><XCircle size={20} /></div><div><p className="text-xs font-bold uppercase text-rose-600 mb-1">Rejected</p><p className="text-2xl font-bold text-slate-800">{rejected}</p></div></Card>
+                <Card className="p-5 flex items-center gap-4 border-purple-100 bg-purple-50/50"><div className="p-3 rounded-lg bg-purple-500 text-white shadow-lg shadow-purple-200"><PieChart size={20} /></div><div><p className="text-xs font-bold uppercase text-purple-600 mb-1">Total Processed</p><p className="text-2xl font-bold text-slate-800">{approved + rejected}</p></div></Card>
+            </div>
+            <Card className="p-0 overflow-hidden shadow-lg border-0">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center"><h3 className="font-bold text-slate-800 flex items-center gap-2"><Clock size={18} className="text-slate-400"/> Process Logs</h3><span className="text-xs font-mono text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">Total: {historyItems.length}</span></div>
+                <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50/50 font-bold border-b text-slate-500 uppercase text-xs"><tr><th className="p-4 w-1/6">Student ID</th><th className="p-4 w-1/4">Name</th><th className="p-4 w-1/4">Unit / Department</th><th className="p-4 w-1/6">Decision</th><th className="p-4 w-1/6">Note</th></tr></thead><tbody className="divide-y divide-slate-50">{historyItems.length === 0 ? (<tr><td colSpan="5" className="p-8 text-center text-slate-400 italic">No records found for the selected filter.</td></tr>) : historyItems.map(item => (<tr key={item.id} className="hover:bg-blue-50/30 transition-colors group"><td className="p-4 font-mono text-xs text-slate-600 font-bold">{item.studentId}</td><td className="p-4 font-medium text-slate-800">{item.studentName}</td><td className="p-4 text-slate-600">{item.unit}</td><td className="p-4"><StatusBadge status={item.status} /></td><td className="p-4 text-slate-500 text-xs max-w-xs truncate group-hover:whitespace-normal group-hover:overflow-visible transition-all" title={item.note}>{item.note || '-'}</td></tr>))}</tbody></table></div>
+            </Card>
+        </div>
+    )
+}
+
+const AdminUserManagement = ({ users, setUsers, addNotification, setClearanceDatabase, setAppointments, setEmergencyRequests }) => {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ id: null, name: '', email: '', role: 'Student', studentId: '', batch: '233' }); 
@@ -715,26 +797,17 @@ const AdminUserManagement = ({ users, setUsers, addNotification, setClearanceDat
         if(confirm('Are you sure you want to delete this user and all their data?')) {
             const userToDelete = users.find(u => u.id === id);
             setUsers(users.filter(u => u.id !== id));
-            
             if (userToDelete?.role === 'Student') {
                 setClearanceDatabase(prev => prev.filter(item => item.studentId !== userToDelete.studentId));
                 setAppointments(prev => prev.filter(app => app.studentId !== userToDelete.studentId));
+                setEmergencyRequests(prev => prev.filter(req => req.studentId !== userToDelete.studentId));
             }
             addNotification({ title: 'User Deleted', msg: 'User and associated data removed.', targetRole: 'admin' });
         }
     }
     
-    const handleEdit = (user) => {
-        setFormData(user);
-        setIsEditing(true);
-        setShowModal(true);
-    };
-
-    const handleOpenAdd = () => {
-        setFormData({ id: null, name: '', email: '', role: 'Student', studentId: '', batch: '233' });
-        setIsEditing(false);
-        setShowModal(true);
-    };
+    const handleEdit = (user) => { setFormData(user); setIsEditing(true); setShowModal(true); };
+    const handleOpenAdd = () => { setFormData({ id: null, name: '', email: '', role: 'Student', studentId: '', batch: '233' }); setIsEditing(false); setShowModal(true); };
 
     const createClearanceForStudent = (student) => {
         const batch = student.batch || 'N/A';
@@ -751,66 +824,40 @@ const AdminUserManagement = ({ users, setUsers, addNotification, setClearanceDat
     const handleSubmit = (e) => {
         e.preventDefault();
         if (isEditing) {
-            setUsers(users.map(u => u.id === formData.id ? { ...u, ...formData } : u));
+            const updatedUser = { ...formData };
+            setUsers(users.map(u => u.id === formData.id ? { ...u, ...updatedUser } : u));
+            if (updatedUser.role === 'Student') {
+               setClearanceDatabase(prev => prev.map(item => item.studentId === updatedUser.studentId ? { ...item, studentName: updatedUser.name } : item));
+               setAppointments(prev => prev.map(app => app.studentId === updatedUser.studentId ? { ...app, studentName: updatedUser.name } : app));
+            }
             addNotification({ title: 'User Updated', msg: `Details for ${formData.name} updated.`, targetRole: 'admin' });
         } else {
+            if (formData.role === 'Student' && users.some(u => u.studentId === formData.studentId)) { alert(`Error: Student ID ${formData.studentId} already exists!`); return; }
             const newId = users.length > 0 ? Math.max(...users.map(u => Number(u.id))) + 1 : 1;
-            const newUser = { id: newId, ...formData, status: 'Active' };
-            
+            const newUser = { id: newId, ...formData, status: 'Active', emergencyQuotaUsed: 0 };
             setUsers([...users, newUser]);
-            if (newUser.role === 'Student') {
-                createClearanceForStudent(newUser);
-            }
+            if (newUser.role === 'Student') createClearanceForStudent(newUser);
             addNotification({ title: 'User Created', msg: `New ${formData.role} account created for ${formData.name}.`, targetRole: 'admin' });
         }
         setShowModal(false);
     };
 
     return (
-        <Card className="p-6 overflow-hidden">
-            <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-slate-800">User Management</h2><Button onClick={handleOpenAdd}><Plus size={16} /> Add User</Button></div>
-            <div className="overflow-x-auto max-h-[500px] overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
-                <table className="w-full text-left text-sm min-w-[600px] table-fixed">
-                    <thead className="bg-slate-50 font-bold border-b text-slate-500 uppercase text-xs sticky top-0 z-10">
-                        <tr>
-                            <th className="p-4 w-3/12">Name</th>
-                            <th className="p-4 w-2/12">Role</th>
-                            <th className="p-4 w-3/12">Email</th>
-                            <th className="p-4 w-2/12">Status</th>
-                            <th className="p-4 w-2/12 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {users.map(u => (
-                            <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                                <td className="p-4 font-bold text-slate-700 whitespace-nowrap truncate">{u.name}</td>
-                                <td className="p-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-xs font-bold ${u.role === 'Student' ? 'bg-blue-50 text-blue-600' : u.role === 'Admin' ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600'}`}>{u.role}</span></td>
-                                <td className="p-4 text-slate-500 whitespace-nowrap truncate">{u.email}</td>
-                                <td className="p-4 text-emerald-600 font-bold text-xs whitespace-nowrap">{u.status}</td>
-                                <td className="p-4 text-right flex justify-end gap-2">
-                                    <button onClick={() => handleEdit(u)} className="text-blue-500 hover:bg-blue-50 p-2 rounded"><Edit2 size={16} /></button>
-                                    <button onClick={() => handleDelete(u.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded"><Trash2 size={16} /></button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+        <>
+            <Card className="p-6 overflow-hidden">
+                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-slate-800">User Management</h2><Button onClick={handleOpenAdd}><Plus size={16} /> Add User</Button></div>
+                <div className="overflow-x-auto max-h-[500px] overflow-y-auto" style={{ scrollbarGutter: 'stable' }}><table className="w-full text-left text-sm min-w-[600px] table-fixed"><thead className="bg-slate-50 font-bold border-b text-slate-500 uppercase text-xs sticky top-0 z-10"><tr><th className="p-4 w-3/12">Name</th><th className="p-4 w-2/12">Role</th><th className="p-4 w-3/12">Email</th><th className="p-4 w-2/12">Status</th><th className="p-4 w-2/12 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{users.map(u => (<tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="p-4 font-bold text-slate-700 whitespace-nowrap truncate">{u.name}</td><td className="p-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-xs font-bold ${u.role === 'Student' ? 'bg-blue-50 text-blue-600' : u.role === 'Admin' ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600'}`}>{u.role}</span></td><td className="p-4 text-slate-500 whitespace-nowrap truncate">{u.email}</td><td className="p-4 text-emerald-600 font-bold text-xs whitespace-nowrap">{u.status}</td><td className="p-4 text-right flex justify-end gap-2"><button onClick={() => handleEdit(u)} className="text-blue-500 hover:bg-blue-50 p-2 rounded"><Edit2 size={16} /></button><button onClick={() => handleDelete(u.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded"><Trash2 size={16} /></button></td></tr>))}</tbody></table></div>
+            </Card>
             <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={isEditing ? "Edit User" : "Add New User"}>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div><label className="block text-sm font-bold text-slate-700 mb-1">Full Name</label><input required className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
                     <div><label className="block text-sm font-bold text-slate-700 mb-1">Email</label><input required type="email" className="w-full border p-2 rounded" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
                     <div><label className="block text-sm font-bold text-slate-700 mb-1">Role</label><select className="w-full border p-2 rounded" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}><option>Student</option><option>Officer</option><option>Admin</option></select></div>
-                    {formData.role === 'Student' && (
-                        <>
-                            <div><label className="block text-sm font-bold text-slate-700 mb-1">Student ID</label><input className="w-full border p-2 rounded" value={formData.studentId || ''} onChange={e => setFormData({...formData, studentId: e.target.value})} /></div>
-                            <div><label className="block text-sm font-bold text-slate-700 mb-1">Batch</label><input className="w-full border p-2 rounded" value={formData.batch || ''} onChange={e => setFormData({...formData, batch: e.target.value})} /></div>
-                        </>
-                    )}
+                    {formData.role === 'Student' && (<><div><label className="block text-sm font-bold text-slate-700 mb-1">Student ID</label><input className="w-full border p-2 rounded" value={formData.studentId || ''} onChange={e => setFormData({...formData, studentId: e.target.value})} /></div><div><label className="block text-sm font-bold text-slate-700 mb-1">Batch</label><input className="w-full border p-2 rounded" value={formData.batch || ''} onChange={e => setFormData({...formData, batch: e.target.value})} /></div></>)}
                     <div className="pt-4"><Button type="submit" className="w-full">{isEditing ? "Update User" : "Create Account"}</Button></div>
                 </form>
             </Modal>
-        </Card>
+        </>
     )
 }
 
@@ -818,13 +865,11 @@ const AdminAnalytics = ({ clearanceItems }) => {
   const total = clearanceItems.length;
   const approved = clearanceItems.filter(i => i.status === 'Approved').length;
   const pending = clearanceItems.filter(i => i.status === 'Pending' || i.status === 'Reviewing').length;
-  // FIX: Accurate revenue calculation (removed hardcoded base)
-  const revenue = clearanceItems.reduce((acc, curr) => acc + (curr.paid ? (curr.fee > 0 ? curr.fee : 0) : 0), 0);
 
   return (
     <div className="space-y-6 animate-in fade-in">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {[{ label: 'Active Requests', value: total, icon: <Users />, color: 'bg-blue-500' }, { label: 'Approvals', value: approved, icon: <CheckCircle />, color: 'bg-emerald-500' }, { label: 'Pending Action', value: pending, icon: <AlertCircle />, color: 'bg-amber-500' }, { label: 'Revenue (Est)', value: `TK ${(revenue/1000).toFixed(1)}k`, icon: <TrendingUp />, color: 'bg-purple-500' }].map((stat, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[{ label: 'Active Requests', value: total, icon: <Users />, color: 'bg-blue-500' }, { label: 'Approvals', value: approved, icon: <CheckCircle />, color: 'bg-emerald-500' }, { label: 'Pending Action', value: pending, icon: <AlertCircle />, color: 'bg-amber-500' }].map((stat, i) => (
           <Card key={i} className="p-5 flex items-center gap-4"><div className={`p-3 rounded-lg text-white ${stat.color}`}>{stat.icon}</div><div><p className="text-sm text-slate-500">{stat.label}</p><p className="text-2xl font-bold text-slate-800">{stat.value}</p></div></Card>
         ))}
       </div>
@@ -832,304 +877,11 @@ const AdminAnalytics = ({ clearanceItems }) => {
     </div>
   );
 };
+
 const AdminSettings = () => {
     const [settings, setSettings] = useState({ regOpen: true, maintenance: false });
     return (
         <div className="max-w-2xl mx-auto space-y-6"><h2 className="text-xl font-bold text-slate-800">System Configuration</h2><Card className="p-6 space-y-6"><div className="flex items-center justify-between"><div><h4 className="font-bold text-slate-700">Student Registration</h4><p className="text-sm text-slate-500">Allow new students to register</p></div><button onClick={() => setSettings({...settings, regOpen: !settings.regOpen})}>{settings.regOpen ? <ToggleRight size={40} className="text-blue-500" /> : <ToggleLeft size={40} className="text-slate-300" />}</button></div><div className="flex items-center justify-between"><div><h4 className="font-bold text-slate-700">Maintenance Mode</h4><p className="text-sm text-slate-500">Disable non-admin access</p></div><button onClick={() => setSettings({...settings, maintenance: !settings.maintenance})}>{settings.maintenance ? <ToggleRight size={40} className="text-blue-500" /> : <ToggleLeft size={40} className="text-slate-300" />}</button></div></Card></div>
-    )
-}
-
-// ... (Officer modules kept the same as previous)
-const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification }) => {
-  const [selectedUnit, setSelectedUnit] = useState('Registrar Office');
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [comment, setComment] = useState('');
-
-  // Queue only shows items that REQUIRE action
-  const queue = clearanceItems.filter(item => 
-      item.unit === selectedUnit && 
-      (item.status === 'Pending' || item.status === 'Reviewing' || item.status === 'Submitted')
-  );
-  
-  const studentFullClearance = selectedRequest ? clearanceItems.filter(item => item.studentId === selectedRequest.studentId && item.unit !== 'Registrar Office') : [];
-  const allOthersApproved = studentFullClearance.every(item => item.status === 'Approved');
-
-  const handleAction = (status) => {
-    if (!selectedRequest) return;
-    updateClearanceItem(selectedRequest.id, { status, note: comment || (status === 'Rejected' ? 'Rejected by officer' : 'Approved by officer') });
-    addNotification({ title: `Clearance ${status}`, msg: `Your request for ${selectedUnit} has been ${status}.`, targetRole: 'student', targetId: selectedRequest.studentId });
-    setSelectedRequest(null);
-    setComment('');
-  };
-
-  return (
-    <div className="flex flex-col h-[calc(100vh-140px)]">
-      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-4 overflow-x-auto">
-         <span className="text-xs font-bold uppercase text-slate-500 whitespace-nowrap">Select Dept:</span>
-         {['Registrar Office', 'Department Head', 'Library Services', 'Bursary Office', 'Hostel Management'].map(unit => (
-             <button key={unit} onClick={() => { setSelectedUnit(unit); setSelectedRequest(null); }} className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedUnit === unit ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{unit}</button>
-         ))}
-      </div>
-      <div className="flex flex-1 overflow-hidden">
-        <Card className="w-1/3 flex flex-col rounded-none border-r border-t-0 border-b-0 border-l-0" noPadding>
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <h3 className="font-bold text-slate-700">{selectedUnit} Queue</h3>
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">{queue.length}</span>
-            </div>
-            <div className="overflow-y-auto flex-1">
-            {queue.map(item => (
-                <div key={item.id} onClick={() => setSelectedRequest(item)} className={`p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 ${selectedRequest?.id === item.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'}`}>
-                    <div className="flex justify-between items-start mb-1"><h4 className="font-bold text-sm text-slate-700">{item.studentName}</h4><StatusBadge status={item.status} /></div>
-                    <p className="text-xs text-slate-500">{item.studentId} • Batch {item.batch || 'N/A'}</p>
-                </div>
-            ))}
-            {queue.length === 0 && (
-                <div className="p-8 text-center text-slate-400 flex flex-col items-center">
-                    <CheckCircle size={32} className="mb-2 text-emerald-200" />
-                    <p>All caught up!</p>
-                    <p className="text-xs mt-1">No pending requests.</p>
-                </div>
-            )}
-            </div>
-        </Card>
-        <div className="flex-1 p-8 overflow-y-auto bg-slate-50/50">
-            {selectedRequest ? (
-            <Card className="max-w-2xl mx-auto">
-                <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4">
-                    <div><h2 className="text-2xl font-bold text-slate-800">{selectedRequest.studentName}</h2><p className="text-slate-500 text-sm">{selectedRequest.studentId}</p></div>
-                    <div className="text-right"><span className="text-xs uppercase font-bold text-slate-400">Current Status</span><div className="mt-1"><StatusBadge status={selectedRequest.status} /></div></div>
-                </div>
-                <div className="space-y-6 mb-8">
-                    {selectedUnit === 'Registrar Office' && (
-                        <div className="bg-slate-100 rounded-lg p-4 border border-slate-200">
-                            <div className="flex justify-between items-center mb-3"><h4 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2"><Stamp size={16} /> Cross-Department Clearance</h4>{allOthersApproved ? <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">All Signatures Verified</span> : <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Pending Signatures</span>}</div>
-                            <div className="space-y-1">{studentFullClearance.map(item => (<div key={item.id} className="flex justify-between text-sm p-2 bg-white rounded border border-slate-100"><span className="text-slate-600">{item.unit}</span><StatusBadge status={item.status} /></div>))}</div>
-                        </div>
-                    )}
-                    {/* New Section: Display Uploaded Proof for Reviewing Items */}
-                    {selectedRequest.status === 'Reviewing' && selectedRequest.uploadedFile && (
-                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white rounded border border-blue-100">
-                                    <FileText size={20} className="text-blue-600" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-slate-700">Proof of Payment</p>
-                                    <p className="text-xs text-blue-600 underline cursor-pointer">{selectedRequest.uploadedFile}</p>
-                                </div>
-                            </div>
-                            <Button variant="secondary" className="h-8 text-xs" onClick={() => alert("Opening document preview...")} icon={Eye}>View</Button>
-                        </div>
-                    )}
-
-                    {selectedRequest.checklist && (
-                        <div>
-                            <h4 className="text-sm font-bold text-slate-700 uppercase mb-3">Checklist Actions</h4>
-                            <div className="space-y-2">{selectedRequest.checklist.map((c, i) => (<div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"><span className="text-sm text-slate-700">{c.label}</span><span className={`text-xs font-bold px-2 py-1 rounded ${isPositiveStatus(c.status) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{c.status}</span></div>))}</div>
-                        </div>
-                    )}
-                </div>
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Officer Decision</label>
-                    <textarea className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none mb-4 resize-none h-24" placeholder="Enter notes..." value={comment} onChange={(e) => setComment(e.target.value)} />
-                    <div className="flex gap-4">
-                        <Button variant="danger" className="flex-1" onClick={() => handleAction('Rejected')}>Reject</Button>
-                        <Button className="flex-1" onClick={() => handleAction('Approved')} disabled={selectedUnit === 'Registrar Office' && !allOthersApproved}>{selectedUnit === 'Registrar Office' && !allOthersApproved ? 'Waiting for other Depts' : 'Approve & Clear'}</Button>
-                    </div>
-                </div>
-            </Card>
-            ) : (<div className="h-full flex flex-col items-center justify-center text-slate-400"><Users size={48} className="mb-4 opacity-20" /><p>Select a student from the {selectedUnit} queue.</p></div>)}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const OfficerAppointments = ({ appointments, updateAppointment }) => {
-    // New State for Officer Department Filtering
-    const [selectedUnit, setSelectedUnit] = useState('Bursary Office');
-
-    // Filter appointments for the selected department
-    const queue = appointments.filter(a => a.officer === selectedUnit && a.status === 'Pending');
-    
-    // New Logic: Group schedule/history by date
-    const schedule = appointments.filter(a => a.officer === selectedUnit && a.status !== 'Pending'); 
-    const groupedSchedule = schedule.reduce((acc, appt) => {
-        const date = appt.date;
-        if (!acc[date]) acc[date] = [];
-        acc[date].push(appt);
-        return acc;
-    }, {});
-    const sortedDates = Object.keys(groupedSchedule).sort();
-    
-    const handleDecision = (id, status) => updateAppointment(id, { status });
-
-    return (
-        <div className="flex flex-col h-[calc(100vh-140px)] p-6 overflow-y-auto">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                <h2 className="text-xl font-bold text-slate-800">Appointment Requests</h2>
-                <div className="flex items-center gap-2">
-                     <span className="text-sm text-slate-500">Viewing as:</span>
-                     <select 
-                         className="p-2 border rounded-lg bg-white text-sm font-medium"
-                         value={selectedUnit}
-                         onChange={(e) => setSelectedUnit(e.target.value)}
-                     >
-                         {['Bursary Office', 'Library Services', 'Department Head', 'Hostel Management', 'Registrar Office'].map(u => (
-                             <option key={u}>{u}</option>
-                         ))}
-                     </select>
-                </div>
-            </div>
-
-            {/* Pending Requests Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                {queue.length === 0 ? (
-                    <div className="col-span-3 text-center py-8 border-2 border-dashed border-slate-200 rounded-xl">
-                        <p className="text-slate-400 italic">No pending appointments for {selectedUnit}.</p>
-                    </div>
-                ) : queue.map(apt => (
-                    <Card key={apt.id} className="p-4">
-                        <div className="flex justify-between items-start mb-2"><div><h4 className="font-bold text-slate-800">{apt.studentName}</h4><p className="text-xs text-slate-500">{apt.studentId}</p></div><div className="text-right"><span className="block font-bold text-emerald-600">{apt.time}</span><span className="text-xs text-slate-400">{apt.date}</span></div></div>
-                        <div className="flex gap-2 mt-4">
-                            <Button variant="secondary" className="flex-1 h-8 text-xs border-rose-200 text-rose-600 hover:bg-rose-50" onClick={() => handleDecision(apt.id, 'Declined')}><X size={14} /> Decline</Button>
-                            <Button className="flex-1 h-8 text-xs" onClick={() => handleDecision(apt.id, 'Confirmed')}><Check size={14} /> Confirm</Button>
-                        </div>
-                    </Card>
-                ))}
-            </div>
-
-            {/* New: Appointment Schedule & History Section */}
-            <div className="mt-8 pt-8 border-t border-slate-200">
-                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    <CalendarCheck size={20} className="text-blue-600"/> 
-                    Appointment Schedule
-                </h3>
-                <div className="space-y-8">
-                    {sortedDates.length === 0 ? (
-                        <p className="text-slate-400 italic text-center">No scheduled appointments.</p>
-                    ) : (
-                        sortedDates.map(date => (
-                            <div key={date} className="relative pl-8 border-l-2 border-blue-100 last:border-l-0">
-                                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-100 border-2 border-blue-500"></div>
-                                <h4 className="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider">{new Date(date).toDateString()}</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {groupedSchedule[date].map(apt => (
-                                        <div key={apt.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-all flex justify-between items-center">
-                                            <div>
-                                                <p className="font-bold text-sm text-slate-800">{apt.studentName}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <Clock size={12} className="text-slate-400"/>
-                                                    <p className="text-xs text-slate-500 font-medium">{apt.time}</p>
-                                                </div>
-                                                <p className="text-[10px] text-slate-400 mt-1 font-mono">{apt.studentId}</p>
-                                            </div>
-                                            <StatusBadge status={apt.status} />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- NEW COMPONENT: Combined Analytics & History ---
-const OfficerAnalytics = ({ clearanceItems }) => {
-    const [filter, setFilter] = useState('All');
-
-    // Stats Calculations
-    const total = clearanceItems.length;
-    const approved = clearanceItems.filter(i => i.status === 'Approved').length;
-    const rejected = clearanceItems.filter(i => i.status === 'Rejected').length;
-    const rate = total > 0 ? Math.round((approved / total) * 100) : 0;
-    const revenue = clearanceItems.reduce((acc, curr) => acc + (curr.paid ? (curr.fee > 0 ? curr.fee : 0) : 0), 0);
-
-    // History List Filtering
-    const historyItems = clearanceItems.filter(i => 
-        i.status !== 'Pending' && i.status !== 'Reviewing' && 
-        (filter === 'All' || i.status === filter)
-    );
-
-    return (
-        <div className="space-y-8 animate-in fade-in">
-            {/* Header Section */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Analytics & History</h2>
-                    <p className="text-slate-500">Overview of departmental performance and logs</p>
-                </div>
-                <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
-                   <div className="p-1.5 bg-blue-50 text-blue-600 rounded"><Filter size={16} /></div>
-                   <select 
-                       className="text-sm font-medium text-slate-700 bg-transparent outline-none pr-2"
-                       value={filter}
-                       onChange={(e) => setFilter(e.target.value)}
-                   >
-                       <option value="All">All Actions</option>
-                       <option value="Approved">Approved Only</option>
-                       <option value="Rejected">Rejected Only</option>
-                   </select>
-                </div>
-            </div>
-
-            {/* Reports / Stats Section */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="p-5 flex items-center gap-4 border-blue-100 bg-blue-50/50">
-                    <div className="p-3 rounded-lg bg-blue-500 text-white shadow-lg shadow-blue-200"><TrendingUp size={20} /></div>
-                    <div><p className="text-xs font-bold uppercase text-blue-600 mb-1">Clearance Rate</p><p className="text-2xl font-bold text-slate-800">{rate}%</p></div>
-                </Card>
-                <Card className="p-5 flex items-center gap-4 border-emerald-100 bg-emerald-50/50">
-                    <div className="p-3 rounded-lg bg-emerald-500 text-white shadow-lg shadow-emerald-200"><CheckCircle size={20} /></div>
-                    <div><p className="text-xs font-bold uppercase text-emerald-600 mb-1">Approved</p><p className="text-2xl font-bold text-slate-800">{approved}</p></div>
-                </Card>
-                <Card className="p-5 flex items-center gap-4 border-rose-100 bg-rose-50/50">
-                    <div className="p-3 rounded-lg bg-rose-500 text-white shadow-lg shadow-rose-200"><XCircle size={20} /></div>
-                    <div><p className="text-xs font-bold uppercase text-rose-600 mb-1">Rejected</p><p className="text-2xl font-bold text-slate-800">{rejected}</p></div>
-                </Card>
-                <Card className="p-5 flex items-center gap-4 border-purple-100 bg-purple-50/50">
-                    <div className="p-3 rounded-lg bg-purple-500 text-white shadow-lg shadow-purple-200"><PieChart size={20} /></div>
-                    <div><p className="text-xs font-bold uppercase text-purple-600 mb-1">Total Processed</p><p className="text-2xl font-bold text-slate-800">{approved + rejected}</p></div>
-                </Card>
-            </div>
-
-            {/* History Table Section */}
-            <Card className="p-0 overflow-hidden shadow-lg border-0">
-                <div className="p-6 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2"><Clock size={18} className="text-slate-400"/> Process Logs</h3>
-                    <span className="text-xs font-mono text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">Total: {historyItems.length}</span>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50/50 font-bold border-b text-slate-500 uppercase text-xs">
-                            <tr>
-                                <th className="p-4 w-1/6">Student ID</th>
-                                <th className="p-4 w-1/4">Name</th>
-                                <th className="p-4 w-1/4">Unit / Department</th>
-                                <th className="p-4 w-1/6">Decision</th>
-                                <th className="p-4 w-1/6">Note</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {historyItems.length === 0 ? (
-                                <tr><td colSpan="5" className="p-8 text-center text-slate-400 italic">No records found for the selected filter.</td></tr>
-                            ) : historyItems.map(item => (
-                                <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
-                                    <td className="p-4 font-mono text-xs text-slate-600 font-bold">{item.studentId}</td>
-                                    <td className="p-4 font-medium text-slate-800">{item.studentName}</td>
-                                    <td className="p-4 text-slate-600">{item.unit}</td>
-                                    <td className="p-4"><StatusBadge status={item.status} /></td>
-                                    <td className="p-4 text-slate-500 text-xs max-w-xs truncate group-hover:whitespace-normal group-hover:overflow-visible transition-all" title={item.note}>{item.note || '-'}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
-        </div>
     )
 }
 
@@ -1141,26 +893,17 @@ export default function App() {
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
   
-  // Central State Management
   const [clearanceDatabase, setClearanceDatabase] = useState(INITIAL_DATABASE);
   const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
   const [users, setUsers] = useState(INITIAL_USERS);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [emergencyRequests, setEmergencyRequests] = useState(INITIAL_EMERGENCY_REQUESTS);
+  const [config, setConfig] = useState(DEFAULT_CONFIG);
 
-  // FIX: Robust Active User Selection (Prevents Crash if All Users Deleted)
   const activeUser = useMemo(() => {
-     if(role === 'student') {
-        const student = users.find(u => u.role === 'Student');
-        return student || null; // Explicit null if no student found
-     }
-     if(role === 'officer') {
-        const officer = users.find(u => u.role === 'Officer');
-        return officer || null;
-     }
-     if(role === 'admin') {
-        const admin = users.find(u => u.role === 'Admin');
-        return admin || null;
-     }
+     if(role === 'student') return users.find(u => u.role === 'Student') || null;
+     if(role === 'officer') return users.find(u => u.role === 'Officer') || null;
+     if(role === 'admin') return users.find(u => u.role === 'Admin') || null;
      return null;
   }, [role, users]);
 
@@ -1169,7 +912,6 @@ export default function App() {
   const addAppointment = (newAppt) => { setAppointments(prev => [...prev, newAppt]); addNotification({ title: 'Appointment Booked', msg: `Booking request sent to ${newAppt.officer}.`, targetRole: 'student' }); }
   const addNotification = (notif) => { setNotifications(prev => [{ id: Date.now(), time: 'Just now', read: false, ...notif }, ...prev]); };
   
-  // FIX: Notification Privacy Leak Check
   const roleNotifications = notifications.filter(n => {
       if (n.targetRole === 'all') return true;
       if (n.targetRole !== role) return false;
@@ -1181,19 +923,21 @@ export default function App() {
   const markAllRead = () => { setNotifications(prev => prev.map(n => (n.targetRole === role || n.targetRole === 'all') ? { ...n, read: true } : n)); };
 
   useEffect(() => {
-    function handleClickOutside(event) {
-        if (notifRef.current && !notifRef.current.contains(event.target)) {
-            setShowNotifications(false);
-        }
-    }
+    const handleClickOutside = (event) => { if (notifRef.current && !notifRef.current.contains(event.target)) setShowNotifications(false); };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notifRef]);
 
+  const handleAdminOverride = (studentId) => {
+      const emergency = emergencyRequests.find(r => r.studentId === studentId && r.status === 'Active');
+      if (emergency) {
+          setEmergencyRequests(prev => prev.map(r => r.id === emergency.id ? { ...r, status: 'Approved' } : r));
+          addNotification({ title: 'Emergency Approved', msg: 'The Registrar has approved your emergency clearance.', targetRole: 'student', targetId: studentId });
+      }
+  }
+
   const renderOfficerContent = () => {
-      if (view === 'dashboard') return <OfficerQueue clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} addNotification={addNotification} />;
+      if (view === 'dashboard') return <OfficerQueue clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} addNotification={addNotification} emergencyRequests={emergencyRequests} />;
       if (view === 'officer-appointments') return <OfficerAppointments appointments={appointments} updateAppointment={updateAppointment} />; 
       if (view === 'analytics') return <OfficerAnalytics clearanceItems={clearanceDatabase} />;
       if (view === 'profile') return <ProfileView user={activeUser} />;
@@ -1201,16 +945,13 @@ export default function App() {
   };
 
   const renderContent = () => {
-    // FIX: Empty State Handling (Prevents Crash)
     if (!activeUser) {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8 animate-in fade-in">
                 <div className="bg-slate-100 p-6 rounded-full mb-6 border-4 border-slate-200"><UserX size={64} className="text-slate-400" /></div>
                 <h2 className="text-2xl font-bold text-slate-800 mb-2">No Account Found</h2>
-                <p className="text-slate-500 max-w-md mb-6">There are no active users for the <span className="font-bold capitalize">{role}</span> role. Please contact the administrator or switch roles.</p>
-                {role !== 'admin' && (
-                    <Button onClick={() => { setRole('admin'); setView('users'); }}>Switch to Admin</Button>
-                )}
+                <p className="text-slate-500 max-w-md mb-6">There are no active users for the <span className="font-bold capitalize">{role}</span> role.</p>
+                {role !== 'admin' && <Button onClick={() => { setRole('admin'); setView('users'); }}>Switch to Admin</Button>}
             </div>
         );
     }
@@ -1219,17 +960,19 @@ export default function App() {
        if(role === 'student') {
             const studentItems = clearanceDatabase.filter(item => item.studentId === activeUser.studentId);
             const isCleared = studentItems.length > 0 && studentItems.every(i => i.status === 'Approved');
+            const emergencyApproved = emergencyRequests.find(r => r.studentId === activeUser.studentId && r.status === 'Approved');
             
-            if (!isCleared) {
+            if (!isCleared && !emergencyApproved) {
                return (
                  <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8 animate-in fade-in zoom-in duration-300">
                    <div className="bg-red-50 p-6 rounded-full mb-6 border-4 border-red-100 shadow-xl"><Lock size={64} className="text-red-500" /></div>
                    <h2 className="text-3xl font-bold text-slate-800 mb-3">Restricted Access</h2>
-                   <p className="text-slate-500 max-w-md text-lg leading-relaxed">Your clearance process is not yet complete. You must have <strong className="text-slate-800">100% Approval</strong> from all departments to unlock your certificate.</p>
+                   <p className="text-slate-500 max-w-md text-lg leading-relaxed">Your clearance is incomplete. You need 100% Approval or an approved Emergency Override.</p>
                    <Button onClick={() => setView('dashboard')} className="mt-8 px-8 py-3 text-lg shadow-xl shadow-blue-200">Return to Dashboard</Button>
                  </div>
                );
             }
+            return <CertificateView studentProfile={activeUser} activeEmergency={emergencyApproved} />;
        }
        return <CertificateView studentProfile={activeUser} />;
     }
@@ -1240,16 +983,43 @@ export default function App() {
     
     if (view === 'users') return (
         <AdminUserManagement 
-            users={users} 
-            setUsers={setUsers} 
-            addNotification={addNotification} 
-            setClearanceDatabase={setClearanceDatabase}
-            setAppointments={setAppointments}
+            users={users} setUsers={setUsers} addNotification={addNotification} 
+            setClearanceDatabase={setClearanceDatabase} setAppointments={setAppointments}
+            emergencyRequests={emergencyRequests} setEmergencyRequests={setEmergencyRequests}
         />
     );
+    
+    if (view === 'dashboard' && role === 'admin') {
+        const pendingEmergencies = emergencyRequests.filter(r => r.status === 'Active');
+        return (
+            <div className="space-y-8">
+                {pendingEmergencies.length > 0 && (
+                    <Card className="p-6 border-rose-200 bg-rose-50">
+                        <h3 className="font-bold text-rose-800 flex items-center gap-2 mb-4"><Siren size={20}/> Pending Emergency Overrides</h3>
+                        <div className="space-y-4">
+                            {pendingEmergencies.map(req => (
+                                <div key={req.id} className="bg-white p-4 rounded-xl border border-rose-100 flex justify-between items-center shadow-sm">
+                                    <div>
+                                        <p className="font-bold text-slate-800">{users.find(u=>u.studentId===req.studentId)?.name} <span className="text-slate-400 text-sm font-normal">({req.studentId})</span></p>
+                                        <p className="text-sm text-rose-600 mt-1">Reason: {req.reason}</p>
+                                        <p className="text-xs text-slate-400 mt-1">Submitted: {req.submissionTime instanceof Date ? req.submissionTime.toLocaleTimeString() : new Date().toLocaleTimeString()}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button variant="danger" onClick={() => handleAdminOverride(req.studentId)}>Approve Override</Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                )}
+                <AdminAnalytics clearanceItems={clearanceDatabase} />
+            </div>
+        )
+    }
+
     if (view === 'settings') return <AdminSettings />;
 
-    if (role === 'student') return <StudentDashboard studentProfile={activeUser} clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} onNavigate={setView} addNotification={addNotification} />;
+    if (role === 'student') return <StudentDashboard studentProfile={activeUser} clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} onNavigate={setView} addNotification={addNotification} emergencyRequests={emergencyRequests} setEmergencyRequests={setEmergencyRequests} config={config} />;
     if (role === 'officer') return renderOfficerContent();
     if (role === 'admin') return <AdminAnalytics clearanceItems={clearanceDatabase} />;
   };
