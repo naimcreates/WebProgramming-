@@ -311,7 +311,7 @@ const ProfileView = ({ user }) => {
     );
 };
 
-const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, setEmergencyRequests, updateClearanceItem, onNavigate, addNotification, config }) => {
+const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, handleEmergencySubmit, updateClearanceItem, onNavigate, config }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(null);
   const [uploading, setUploading] = useState(null);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
@@ -319,24 +319,13 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, s
 
   const activeEmergency = emergencyRequests.find(req => req.studentId === studentProfile.studentId && req.status !== 'Closed');
   
-  const submitEmergencyRequest = (e) => {
+  const onSubmitEmergency = (e) => {
       e.preventDefault();
-      if(studentProfile.emergencyQuotaUsed >= config.maxEmergencyRequestsPerYear) {
-          alert("Yearly emergency quota exceeded.");
-          return;
+      const success = handleEmergencySubmit(studentProfile, emergencyForm);
+      if (success) {
+          setShowEmergencyModal(false);
+          setEmergencyForm({ type: 'Medical', reason: '', date: '', phone: '', file: null });
       }
-      const newRequest = {
-          id: Date.now(),
-          studentId: studentProfile.studentId,
-          ...emergencyForm,
-          submissionTime: new Date(),
-          status: 'Active',
-          approvals: { dept: 'Pending', library: 'Pending', hostel: 'Pending', finance: 'Pending' }
-      };
-      setEmergencyRequests(prev => [...prev, newRequest]);
-      setShowEmergencyModal(false);
-      addNotification({ title: 'Emergency Request Submitted', msg: 'Your request is being processed on priority.', targetRole: 'student', targetId: studentProfile.studentId });
-      addNotification({ title: '🚨 Emergency Alert', msg: `${studentProfile.name} initiated emergency clearance.`, targetRole: 'officer' });
   };
 
   const myItems = useMemo(() => {
@@ -362,14 +351,12 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, s
     setUploading(id);
     setTimeout(() => {
       updateClearanceItem(id, { status: 'Reviewing', note: 'Document uploaded.', uploadedFile: 'Proof.pdf' });
-      addNotification({ title: 'Document Uploaded', msg: `You uploaded a document for verification.`, targetRole: 'student', targetId: studentProfile.studentId });
       setUploading(null);
     }, 1500);
   };
 
   const handlePay = (id) => {
     updateClearanceItem(id, { paid: true, fee: 0, status: 'Pending', docRequired: true, note: 'Payment successful.' });
-    addNotification({ title: 'Payment Successful', msg: `Payment successful.`, targetRole: 'student', targetId: studentProfile.studentId });
     setShowPaymentModal(null);
   };
 
@@ -393,14 +380,25 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, s
   return (
     <div className="space-y-8 animate-in fade-in">
       {activeEmergency && (
-          <div className="bg-rose-50 border-l-4 border-rose-500 p-4 rounded-r-lg shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className={`p-4 rounded-r-lg shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 ${activeEmergency.status === 'Approved' ? 'bg-emerald-50 border-l-emerald-500' : 'bg-rose-50 border-l-rose-500'}`}>
               <div>
-                  <h3 className="text-rose-800 font-bold flex items-center gap-2"><Siren size={20} className="animate-pulse"/> Emergency Clearance Active</h3>
-                  <p className="text-sm text-rose-600 mt-1">Reason: <span className="font-medium">{activeEmergency.reason}</span> • Type: {activeEmergency.type}</p>
+                  <h3 className={`font-bold flex items-center gap-2 ${activeEmergency.status === 'Approved' ? 'text-emerald-800' : 'text-rose-800'}`}>
+                      {activeEmergency.status === 'Approved' ? <CheckCircle size={20} /> : <Siren size={20} className="animate-pulse"/>}
+                      {activeEmergency.status === 'Approved' ? 'Emergency Clearance Approved' : 'Emergency Clearance Active'}
+                  </h3>
+                  <p className={`text-sm mt-1 ${activeEmergency.status === 'Approved' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    Reason: <span className="font-medium">{activeEmergency.reason}</span> • Type: {activeEmergency.type}
+                  </p>
               </div>
               <div className="text-right">
-                  <span className="text-xs uppercase font-bold text-rose-400 block">SLA Timer</span>
-                  <span className="text-2xl font-mono font-bold text-rose-700"><Timer className="inline mb-1 mr-1" size={20}/>18:42:12</span>
+                  {activeEmergency.status === 'Approved' ? (
+                      <Button onClick={() => onNavigate('certificate')} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200">View Certificate</Button>
+                  ) : (
+                      <>
+                        <span className="text-xs uppercase font-bold text-rose-400 block">SLA Timer</span>
+                        <span className="text-2xl font-mono font-bold text-rose-700"><Timer className="inline mb-1 mr-1" size={20}/>18:42:12</span>
+                      </>
+                  )}
               </div>
           </div>
       )}
@@ -503,7 +501,7 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, s
       </Modal>
 
       <Modal isOpen={showEmergencyModal} onClose={() => setShowEmergencyModal(false)} title="🚨 Emergency Clearance Request">
-          <form onSubmit={submitEmergencyRequest} className="space-y-4">
+          <form onSubmit={onSubmitEmergency} className="space-y-4">
               <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-sm border border-amber-100 flex gap-2"><ShieldAlert className="flex-shrink-0" size={20} /><p>Emergency clearance is strictly for medical, job, or travel urgency. <strong>Quota: {config.maxEmergencyRequestsPerYear - studentProfile.emergencyQuotaUsed}/{config.maxEmergencyRequestsPerYear} remaining.</strong></p></div>
               <div><label className="block text-sm font-bold text-slate-700 mb-1">Request Type</label><select className="w-full border p-2 rounded bg-white" required value={emergencyForm.type} onChange={e => setEmergencyForm({...emergencyForm, type: e.target.value})}><option>Medical Emergency</option><option>Job Joining</option><option>Visa/Travel</option><option>Other</option></select></div>
               <div><label className="block text-sm font-bold text-slate-700 mb-1">Reason for Urgency</label><textarea required className="w-full border p-2 rounded" rows="3" placeholder="Describe why you need expedited clearance..." value={emergencyForm.reason} onChange={e => setEmergencyForm({...emergencyForm, reason: e.target.value})} /></div>
@@ -534,7 +532,10 @@ const GuidelinesView = () => {
 };
 
 const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfile }) => {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+      const today = new Date();
+      return today.toLocaleDateString('en-CA'); // YYYY-MM-DD local time safe
+  });
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [booked, setBooked] = useState(false);
   const [unit, setUnit] = useState('Bursary Office');
@@ -611,15 +612,27 @@ const AppointmentsView = ({ navigate, appointments, addAppointment, studentProfi
   );
 };
 
-const CertificateView = ({ studentProfile, activeEmergency }) => {
-  const isEmergency = activeEmergency && activeEmergency.status === 'Approved';
-  const type = isEmergency ? "PROVISIONAL EMERGENCY" : "OFFICIAL";
+const CertificateView = ({ studentProfile, activeEmergency, isCleared }) => {
+  // If user has full clearance, it's OFFICIAL.
+  // If not full clearance but here via emergency override, it's PROVISIONAL.
+  const isProvisional = !isCleared;
+  const type = isProvisional ? "PROVISIONAL EMERGENCY" : "OFFICIAL";
+
   return (
   <div className="flex justify-center p-4 print:p-0 print:m-0 print:absolute print:top-0 print:left-0 print:w-full print:h-full print:z-[9999] print:bg-white">
-    <style>{`@media print { body { -webkit-print-color-adjust: exact; } body * { visibility: hidden; } #certificate-container, #certificate-container * { visibility: visible; } #certificate-container { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; box-shadow: none; border: none; } #print-btn { display: none; } }`}</style>
+    <style>{`@media print { body { -webkit-print-color-adjust: exact; } body * { visibility: hidden; } #certificate-container, #certificate-container * { visibility: visible; } #certificate-container { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 40px; box-shadow: none; border: none; } #print-btn { display: none; } }`}</style>
     <div id="certificate-container" className="bg-white shadow-2xl w-[700px] min-h-[900px] p-12 relative border border-slate-200 text-center print:shadow-none print:border-none print:w-full overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-4 bg-blue-900"></div>
-      {isEmergency && <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] z-0"><span className="text-9xl font-black -rotate-45 transform uppercase text-slate-900">PROVISIONAL</span></div>}
+      
+      {/* --- WATERMARK LOGIC --- */}
+      {isProvisional && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.12] z-0">
+            <div className="transform -rotate-45 border-[12px] border-slate-900 p-8 rounded-3xl">
+                <span className="text-[120px] font-black uppercase text-slate-900 whitespace-nowrap leading-none">PROVISIONAL</span>
+            </div>
+        </div>
+      )}
+
       <div className="mb-12 relative z-10">
         <div className="w-20 h-20 bg-slate-900 rounded-full mx-auto mb-4 flex items-center justify-center text-white font-serif text-3xl">U</div>
         <h1 className="text-3xl font-serif font-bold text-slate-900 uppercase tracking-widest">University of Tech</h1>
@@ -630,9 +643,16 @@ const CertificateView = ({ studentProfile, activeEmergency }) => {
         <p className="text-slate-600 text-lg">This is to certify that</p>
         <p className="text-3xl font-bold text-slate-800 my-4 font-serif">{studentProfile.name}</p>
         <p className="text-slate-600">Matriculation Number: <strong>{studentProfile.studentId}</strong></p>
-        {isEmergency ? (
-            <div className="bg-amber-50 border border-amber-200 p-4 mt-4 rounded text-sm text-amber-900 max-w-lg mx-auto"><strong>Conditional Clearance:</strong> This certificate is issued under emergency protocol ({activeEmergency.type}). Final verification of dues is pending. Validity expires in 30 days.</div>
-        ) : (<p className="text-slate-600 mt-2">Has satisfactorily fulfilled all financial and non-financial obligations to the university and is hereby cleared for graduation.</p>)}
+        
+        {isProvisional ? (
+            <div className="bg-amber-50 border border-amber-200 p-4 mt-6 rounded text-sm text-amber-900 max-w-lg mx-auto">
+                <strong>Conditional Clearance:</strong> This certificate is issued under emergency protocol ({activeEmergency?.type || 'Special Request'}). Final verification of dues is pending. Validity expires in 30 days.
+            </div>
+        ) : (
+            <p className="text-slate-600 mt-6 max-w-lg mx-auto leading-relaxed">
+                Has satisfactorily fulfilled all financial and non-financial obligations to the university and is hereby cleared for graduation.
+            </p>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-12 text-left mb-16 relative z-10">
         <div><p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Department</p><p className="font-medium">{studentProfile.dept || 'N/A'}</p></div>
@@ -651,15 +671,25 @@ const CertificateView = ({ studentProfile, activeEmergency }) => {
   </div>
 )};
 
-const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification, emergencyRequests }) => {
+const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification, emergencyRequests, onEmergencyApprove }) => {
   const [selectedUnit, setSelectedUnit] = useState('Registrar Office');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [comment, setComment] = useState('');
 
-  const queue = clearanceItems.filter(item => item.unit === selectedUnit && (item.status === 'Pending' || item.status === 'Reviewing' || item.status === 'Submitted'));
   const urgentRequests = emergencyRequests.filter(req => req.status === 'Active');
+
+  const queue = clearanceItems.filter(item => {
+      if (item.unit !== selectedUnit) return false;
+      const isUrgent = urgentRequests.some(r => r.studentId === item.studentId);
+      if (isUrgent && item.status !== 'Approved') return true; 
+      return ['Pending', 'Reviewing', 'Submitted'].includes(item.status);
+  });
+
   const studentFullClearance = selectedRequest ? clearanceItems.filter(item => item.studentId === selectedRequest.studentId && item.unit !== 'Registrar Office') : [];
   const allOthersApproved = studentFullClearance.every(item => item.status === 'Approved');
+  
+  // Check if selected student has an ACTIVE emergency request
+  const activeStudentEmergency = selectedRequest ? urgentRequests.find(r => r.studentId === selectedRequest.studentId) : null;
 
   const handleAction = (status) => {
     if (!selectedRequest) return;
@@ -667,6 +697,16 @@ const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification, em
     addNotification({ title: `Clearance ${status}`, msg: `Your request for ${selectedUnit} has been ${status}.`, targetRole: 'student', targetId: selectedRequest.studentId });
     setSelectedRequest(null);
     setComment('');
+  };
+
+  const toggleChecklistItem = (index) => {
+      if (!selectedRequest) return;
+      const updatedChecklist = [...selectedRequest.checklist];
+      const currentStatus = updatedChecklist[index].status;
+      const newStatus = isPositiveStatus(currentStatus) ? 'Pending' : 'Cleared';
+      updatedChecklist[index] = { ...updatedChecklist[index], status: newStatus };
+      updateClearanceItem(selectedRequest.id, { checklist: updatedChecklist });
+      setSelectedRequest(prev => ({ ...prev, checklist: updatedChecklist }));
   };
 
   return (
@@ -704,23 +744,80 @@ const OfficerQueue = ({ clearanceItems, updateClearanceItem, addNotification, em
                     <div><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">{selectedRequest.studentName}{urgentRequests.some(r => r.studentId === selectedRequest.studentId) && <span className="bg-rose-100 text-rose-700 text-xs px-2 py-1 rounded border border-rose-200">EMERGENCY</span>}</h2><p className="text-slate-500 text-sm">{selectedRequest.studentId}</p></div>
                     <div className="text-right"><span className="text-xs uppercase font-bold text-slate-400">Current Status</span><div className="mt-1"><StatusBadge status={selectedRequest.status} /></div></div>
                 </div>
-                {urgentRequests.some(r => r.studentId === selectedRequest.studentId) && (
+                
+                {/* EMERGENCY BANNER & ACTION FOR REGISTRAR */}
+                {activeStudentEmergency && (
                     <div className="mb-6 bg-rose-50 border border-rose-100 p-4 rounded-lg">
-                        <h4 className="font-bold text-rose-800 text-sm flex items-center gap-2 mb-2"><FileWarning size={16}/> Emergency Details</h4>
-                        <div className="text-sm text-slate-700 grid grid-cols-2 gap-4">
-                            <div><span className="text-xs text-slate-500 block">Reason</span>{urgentRequests.find(r=>r.studentId === selectedRequest.studentId).reason}</div>
-                            <div><span className="text-xs text-slate-500 block">Contact</span>{urgentRequests.find(r=>r.studentId === selectedRequest.studentId).phone}</div>
-                            <div><span className="text-xs text-slate-500 block">Date Needed</span>{urgentRequests.find(r=>r.studentId === selectedRequest.studentId).date}</div>
-                            <div><span className="text-xs text-slate-500 block">Proof</span><a href="#" className="text-blue-600 underline flex items-center gap-1"><ExternalLink size={12}/> View Doc</a></div>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h4 className="font-bold text-rose-800 text-sm flex items-center gap-2 mb-2"><FileWarning size={16}/> Emergency Details</h4>
+                                <div className="text-sm text-slate-700 grid grid-cols-2 gap-4">
+                                    <div><span className="text-xs text-slate-500 block">Reason</span>{activeStudentEmergency.reason}</div>
+                                    <div><span className="text-xs text-slate-500 block">Contact</span>{activeStudentEmergency.phone}</div>
+                                    <div><span className="text-xs text-slate-500 block">Date Needed</span>{activeStudentEmergency.date}</div>
+                                    <div><span className="text-xs text-slate-500 block">Proof</span><a href="#" className="text-blue-600 underline flex items-center gap-1"><ExternalLink size={12}/> View Doc</a></div>
+                                </div>
+                            </div>
+                            {selectedUnit === 'Registrar Office' && (
+                                <div className="flex flex-col gap-2">
+                                    <Button variant="emergency" className="text-xs px-3 py-2" onClick={() => {
+                                        onEmergencyApprove(selectedRequest.studentId);
+                                        setSelectedRequest(null);
+                                    }}>
+                                        Approve Emergency Protocol
+                                    </Button>
+                                    <span className="text-[10px] text-rose-600 text-center font-bold max-w-[120px] leading-tight">Overrides pending dues for temp certificate</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
+
                 <div className="space-y-6 mb-8">
                     {selectedUnit === 'Registrar Office' && (<div className="bg-slate-100 rounded-lg p-4 border border-slate-200"><div className="flex justify-between items-center mb-3"><h4 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2"><Stamp size={16} /> Cross-Department Clearance</h4>{allOthersApproved ? <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">All Signatures Verified</span> : <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Pending Signatures</span>}</div><div className="space-y-1">{studentFullClearance.map(item => (<div key={item.id} className="flex justify-between text-sm p-2 bg-white rounded border border-slate-100"><span className="text-slate-600">{item.unit}</span><StatusBadge status={item.status} /></div>))}</div></div>)}
                     {selectedRequest.status === 'Reviewing' && selectedRequest.uploadedFile && (
                         <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="p-2 bg-white rounded border border-blue-100"><FileText size={20} className="text-blue-600" /></div><div><p className="text-sm font-bold text-slate-700">Proof of Payment</p><p className="text-xs text-blue-600 underline cursor-pointer">{selectedRequest.uploadedFile}</p></div></div><Button variant="secondary" className="h-8 text-xs" onClick={() => alert("Opening document preview...")} icon={Eye}>View</Button></div>
                     )}
-                    {selectedRequest.checklist && (<div><h4 className="text-sm font-bold text-slate-700 uppercase mb-3">Checklist Actions</h4><div className="space-y-2">{selectedRequest.checklist.map((c, i) => (<div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"><span className="text-sm text-slate-700">{c.label}</span><span className={`text-xs font-bold px-2 py-1 rounded ${isPositiveStatus(c.status) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{c.status}</span></div>))}</div></div>)}
+                    
+                    {selectedRequest.breakdown && (
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-4">
+                            <h4 className="text-sm font-bold text-slate-700 uppercase mb-3">Fee Status</h4>
+                            {selectedRequest.breakdown.map((fee, idx) => (
+                                <div key={idx} className="flex justify-between text-sm mb-1 text-slate-600">
+                                    <span>{fee.label}</span>
+                                    <span className="font-mono">TK {fee.amount.toFixed(2)}</span>
+                                </div>
+                            ))}
+                            <div className="border-t border-slate-200 mt-2 pt-2 flex justify-between font-bold text-slate-800">
+                                <span>Total Amount</span>
+                                <span>TK {selectedRequest.fee.toFixed(2)}</span>
+                            </div>
+                            <div className={`mt-3 p-2 rounded text-center text-xs font-bold border ${selectedRequest.paid ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-rose-100 text-rose-700 border-rose-200'}`}>
+                                {selectedRequest.paid ? 'PAYMENT CLEARED' : 'PAYMENT PENDING'}
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedRequest.checklist && (
+                        <div>
+                            <h4 className="text-sm font-bold text-slate-700 uppercase mb-3">Checklist Verification</h4>
+                            <div className="space-y-2">
+                                {selectedRequest.checklist.map((c, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer" onClick={() => toggleChecklistItem(i)}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isPositiveStatus(c.status) ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'}`}>
+                                                {isPositiveStatus(c.status) && <Check size={14} className="text-white" />}
+                                            </div>
+                                            <span className={`text-sm ${isPositiveStatus(c.status) ? 'text-slate-800 font-medium' : 'text-slate-600'}`}>{c.label}</span>
+                                        </div>
+                                        <span className={`text-xs font-bold px-2 py-1 rounded ${isPositiveStatus(c.status) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                            {c.status}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <div><label className="block text-sm font-bold text-slate-700 mb-2">Officer Decision</label><textarea className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none mb-4 resize-none h-24" placeholder="Enter notes..." value={comment} onChange={(e) => setComment(e.target.value)} /><div className="flex gap-4"><Button variant="danger" className="flex-1" onClick={() => handleAction('Rejected')}>Reject</Button><Button className="flex-1" onClick={() => handleAction('Approved')} disabled={selectedUnit === 'Registrar Office' && !allOthersApproved}>{selectedUnit === 'Registrar Office' && !allOthersApproved ? 'Waiting for other Depts' : 'Approve & Clear'}</Button></div></div>
             </Card>
@@ -885,10 +982,53 @@ const AdminSettings = () => {
     )
 }
 
+// --- 4. NEW LOGIN COMPONENT ---
+
+const LoginView = ({ onLogin }) => {
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+      <div className="mb-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="w-20 h-20 bg-blue-700 rounded-2xl flex items-center justify-center text-white shadow-xl mx-auto mb-4 relative overflow-hidden">
+             <div className="absolute inset-0 bg-gradient-to-tr from-blue-800 to-indigo-600"></div>
+             <Shield size={40} className="relative z-10" fill="currentColor" fillOpacity={0.2} />
+        </div>
+        <h1 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">UniClearance</h1>
+        <p className="text-slate-500">Select your portal to secure access</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-700">
+        {[
+          { id: 'student', label: 'Student Portal', icon: GraduationCap, color: 'blue', desc: 'View clearance status, pay dues & apply for emergency.' },
+          { id: 'officer', label: 'Officer Portal', icon: Stamp, color: 'emerald', desc: 'Process requests, verify documents & manage queue.' },
+          { id: 'admin', label: 'Admin Portal', icon: ShieldAlert, color: 'slate', desc: 'System configuration, user management & analytics.' }
+        ].map(portal => (
+          <button 
+            key={portal.id}
+            onClick={() => onLogin(portal.id)}
+            className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center group"
+          >
+            <div className={`w-16 h-16 rounded-full bg-${portal.color}-50 text-${portal.color}-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+              <portal.icon size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">{portal.label}</h3>
+            <p className="text-sm text-slate-500 leading-relaxed mb-6 h-10">{portal.desc}</p>
+            <div className={`mt-auto px-6 py-2 rounded-full bg-${portal.color}-50 text-${portal.color}-700 font-bold text-sm group-hover:bg-${portal.color}-600 group-hover:text-white transition-colors`}>
+              Login as {portal.label.split(' ')[0]}
+            </div>
+          </button>
+        ))}
+      </div>
+      
+      <p className="mt-12 text-slate-400 text-sm">© 2025 University Clearance System. Secure Access.</p>
+    </div>
+  );
+};
+
 // --- MAIN APP ---
 export default function App() {
   const [role, setRole] = useState('student');
   const [view, setView] = useState('dashboard');
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // NEW STATE FOR LOGIN
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
@@ -906,6 +1046,39 @@ export default function App() {
      if(role === 'admin') return users.find(u => u.role === 'Admin') || null;
      return null;
   }, [role, users]);
+
+  // NEW: Handle Emergency Submit correctly (Updates Users + Requests)
+  const handleEmergencySubmit = (student, form) => {
+      if(student.emergencyQuotaUsed >= config.maxEmergencyRequestsPerYear) {
+          alert("Yearly emergency quota exceeded.");
+          return false;
+      }
+      // 1. Add Request
+      const newRequest = {
+          id: Date.now(),
+          studentId: student.studentId,
+          ...form,
+          submissionTime: new Date(),
+          status: 'Active',
+          approvals: { dept: 'Pending', library: 'Pending', hostel: 'Pending', finance: 'Pending' }
+      };
+      setEmergencyRequests(prev => [...prev, newRequest]);
+
+      // 2. Increment Quota for User
+      setUsers(prev => prev.map(u => u.id === student.id ? { ...u, emergencyQuotaUsed: u.emergencyQuotaUsed + 1 } : u));
+
+      addNotification({ title: 'Emergency Request Submitted', msg: 'Your request is being processed on priority.', targetRole: 'student', targetId: student.studentId });
+      addNotification({ title: '🚨 Emergency Alert', msg: `${student.name} initiated emergency clearance.`, targetRole: 'officer' });
+      return true;
+  };
+
+  const handleEmergencyApproval = (studentId) => {
+      const emergency = emergencyRequests.find(r => r.studentId === studentId && r.status === 'Active');
+      if (emergency) {
+          setEmergencyRequests(prev => prev.map(r => r.id === emergency.id ? { ...r, status: 'Approved' } : r));
+          addNotification({ title: 'Emergency Approved', msg: 'The Registrar has approved your emergency clearance.', targetRole: 'student', targetId: studentId });
+      }
+  }
 
   const updateClearanceItem = (itemId, updates) => { setClearanceDatabase(prev => prev.map(item => item.id === itemId ? { ...item, ...updates } : item)); };
   const updateAppointment = (id, updates) => { setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a)); };
@@ -937,7 +1110,7 @@ export default function App() {
   }
 
   const renderOfficerContent = () => {
-      if (view === 'dashboard') return <OfficerQueue clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} addNotification={addNotification} emergencyRequests={emergencyRequests} />;
+      if (view === 'dashboard') return <OfficerQueue clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} addNotification={addNotification} emergencyRequests={emergencyRequests} onEmergencyApprove={handleEmergencyApproval} />;
       if (view === 'officer-appointments') return <OfficerAppointments appointments={appointments} updateAppointment={updateAppointment} />; 
       if (view === 'analytics') return <OfficerAnalytics clearanceItems={clearanceDatabase} />;
       if (view === 'profile') return <ProfileView user={activeUser} />;
@@ -951,7 +1124,7 @@ export default function App() {
                 <div className="bg-slate-100 p-6 rounded-full mb-6 border-4 border-slate-200"><UserX size={64} className="text-slate-400" /></div>
                 <h2 className="text-2xl font-bold text-slate-800 mb-2">No Account Found</h2>
                 <p className="text-slate-500 max-w-md mb-6">There are no active users for the <span className="font-bold capitalize">{role}</span> role.</p>
-                {role !== 'admin' && <Button onClick={() => { setRole('admin'); setView('users'); }}>Switch to Admin</Button>}
+                <Button onClick={() => setIsLoggedIn(false)}>Return to Login</Button>
             </div>
         );
     }
@@ -972,9 +1145,9 @@ export default function App() {
                  </div>
                );
             }
-            return <CertificateView studentProfile={activeUser} activeEmergency={emergencyApproved} />;
+            return <CertificateView studentProfile={activeUser} activeEmergency={emergencyApproved} isCleared={isCleared} />;
        }
-       return <CertificateView studentProfile={activeUser} />;
+       return <CertificateView studentProfile={activeUser} isCleared={true} />;
     }
 
     if (view === 'profile') return <ProfileView user={activeUser} />;
@@ -1019,7 +1192,7 @@ export default function App() {
 
     if (view === 'settings') return <AdminSettings />;
 
-    if (role === 'student') return <StudentDashboard studentProfile={activeUser} clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} onNavigate={setView} addNotification={addNotification} emergencyRequests={emergencyRequests} setEmergencyRequests={setEmergencyRequests} config={config} />;
+    if (role === 'student') return <StudentDashboard studentProfile={activeUser} clearanceItems={clearanceDatabase} updateClearanceItem={updateClearanceItem} onNavigate={setView} addNotification={addNotification} emergencyRequests={emergencyRequests} handleEmergencySubmit={handleEmergencySubmit} config={config} />;
     if (role === 'officer') return renderOfficerContent();
     if (role === 'admin') return <AdminAnalytics clearanceItems={clearanceDatabase} />;
   };
@@ -1048,6 +1221,11 @@ export default function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // --- RENDER LOGIN IF NOT LOGGED IN ---
+  if (!isLoggedIn) {
+      return <LoginView onLogin={(selectedRole) => { setRole(selectedRole); setIsLoggedIn(true); setView('dashboard'); }} />;
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden">
@@ -1091,7 +1269,7 @@ export default function App() {
             </nav>
 
             <div className="p-4 border-t border-blue-100/50">
-                <button className={`w-full flex items-center gap-3 p-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all ${!isSidebarOpen && 'justify-center'}`}>
+                <button onClick={() => setIsLoggedIn(false)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all ${!isSidebarOpen && 'justify-center'}`}>
                     <LogOut size={20} />
                     {isSidebarOpen && <span className="font-medium">Logout</span>}
                 </button>
@@ -1105,11 +1283,6 @@ export default function App() {
                     <h1 className="text-xl font-bold capitalize truncate text-slate-800 tracking-tight">{role} Portal</h1>
                 </div>
                 <div className="flex items-center gap-2 md:gap-4">
-                    <div className="bg-slate-100 p-1 rounded-lg flex shadow-inner">
-                        {['student', 'officer', 'admin'].map(r => (
-                            <button key={r} onClick={() => { setRole(r); setView('dashboard'); }} className={`px-3 py-1.5 rounded-md capitalize text-xs md:text-sm transition-all duration-200 ${role === r ? 'bg-white shadow-sm font-bold text-slate-800 transform scale-105' : 'text-slate-500 hover:text-slate-700'}`}>{r}</button>
-                        ))}
-                    </div>
                     <div className="relative" ref={notifRef}>
                         <button onClick={() => setShowNotifications(!showNotifications)} className="p-2 relative rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
                             <Bell size={20} />
