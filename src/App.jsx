@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye, CalendarCheck, Filter, PieChart, Lock, UserX, Siren, Timer, FileWarning, ExternalLink
+  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye, CalendarCheck, Filter, PieChart, Lock, UserX, Siren, Timer, FileWarning, ExternalLink, Key
 } from 'lucide-react';
 
 // --- 1. CONSTANTS & REAL-WORLD DATA ---
@@ -13,12 +13,14 @@ const DEFAULT_CONFIG = {
     maxEmergencyRequestsPerYear: 2
 };
 
+// ADDED PASSWORDS FOR LOGIN SIMULATION
 const INITIAL_USERS = [
     { 
         id: 1, 
         name: 'Alex Thompson', 
         role: 'Student', 
         email: 'alex.t@uni.edu', 
+        password: '1234',
         status: 'Active', 
         studentId: '0112230676',
         dept: 'Computer Science',
@@ -28,10 +30,52 @@ const INITIAL_USERS = [
         address: '123 Campus Dorm, Block B',
         emergencyQuotaUsed: 0
     },
-    { id: 2, name: 'Sarah Jenkins', role: 'Officer', email: 'sarah.j@uni.edu', status: 'Active', phone: '+1 (555) 987-6543', dept: 'Registrar Office' },
-    { id: 3, name: 'Dr. Al-Fayed', role: 'Admin', email: 'admin@uni.edu', status: 'Active', phone: '+1 (555) 000-1111' },
-    { id: 4, name: 'Jamie Doe', role: 'Student', email: 'jamie.d@uni.edu', status: 'Active', studentId: '0112230670', dept: 'EEE', batch: '231', semester: '6th', phone: '+1 (555) 222-3333', emergencyQuotaUsed: 1 },
-    { id: 5, name: 'Jordan Smith', role: 'Student', email: 'jordan.s@uni.edu', status: 'Active', studentId: '0112420876', dept: 'BBA', batch: '232', semester: '4th', phone: '+1 (555) 444-5555' },
+    { 
+        id: 2, 
+        name: 'Sarah Jenkins', 
+        role: 'Officer', 
+        email: 'sarah.j@uni.edu', 
+        password: '1234',
+        status: 'Active', 
+        phone: '+1 (555) 987-6543', 
+        dept: 'Registrar Office' 
+    },
+    { 
+        id: 3, 
+        name: 'Dr. Al-Fayed', 
+        role: 'Admin', 
+        email: 'alfayed.admin@uni.edu', // Updated Admin Email
+        password: '1234',
+        status: 'Active', 
+        phone: '+1 (555) 000-1111' 
+    },
+    { 
+        id: 4, 
+        name: 'Jamie Doe', 
+        role: 'Student', 
+        email: 'jamie.d@uni.edu', 
+        password: '1234',
+        status: 'Active', 
+        studentId: '0112230670', 
+        dept: 'EEE', 
+        batch: '231', 
+        semester: '6th', 
+        phone: '+1 (555) 222-3333', 
+        emergencyQuotaUsed: 1 
+    },
+    { 
+        id: 5, 
+        name: 'Jordan Smith', 
+        role: 'Student', 
+        email: 'jordan.s@uni.edu', 
+        password: '1234',
+        status: 'Active', 
+        studentId: '0112420876', 
+        dept: 'BBA', 
+        batch: '232', 
+        semester: '4th', 
+        phone: '+1 (555) 444-5555' 
+    },
 ];
 
 const INITIAL_DATABASE = [
@@ -985,41 +1029,82 @@ const AdminSettings = () => {
 // --- 4. NEW LOGIN COMPONENT ---
 
 const LoginView = ({ onLogin }) => {
+  const [userId, setUserId] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    // No role selection needed, passing generic input
+    onLogin(userId, password, setError);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-      <div className="mb-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="w-20 h-20 bg-blue-700 rounded-2xl flex items-center justify-center text-white shadow-xl mx-auto mb-4 relative overflow-hidden">
-             <div className="absolute inset-0 bg-gradient-to-tr from-blue-800 to-indigo-600"></div>
-             <Shield size={40} className="relative z-10" fill="currentColor" fillOpacity={0.2} />
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 border border-slate-100">
+        <div className="p-8 pb-6 border-b border-slate-100 text-center bg-slate-50/50">
+            <div className="w-16 h-16 bg-blue-700 rounded-xl flex items-center justify-center text-white shadow-lg mx-auto mb-4 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-800 to-indigo-600"></div>
+                <Shield size={32} className="relative z-10" fill="currentColor" fillOpacity={0.2} />
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">UniClearance</h1>
+            <p className="text-sm text-slate-500 mt-1">Secure Clearance Portal</p>
         </div>
-        <h1 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">UniClearance</h1>
-        <p className="text-slate-500">Select your portal to secure access</p>
+
+        <div className="p-8 pt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">
+                        User ID / Email
+                    </label>
+                    <div className="relative">
+                        <div className="absolute left-3 top-3 text-slate-400">
+                            <User size={18} />
+                        </div>
+                        <input 
+                            type="text" 
+                            required
+                            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-slate-50/50"
+                            placeholder="Student ID or Email"
+                            value={userId}
+                            onChange={(e) => setUserId(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Password</label>
+                    <div className="relative">
+                        <div className="absolute left-3 top-3 text-slate-400">
+                            <Key size={18} />
+                        </div>
+                        <input 
+                            type="password" 
+                            required
+                            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-slate-50/50"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {error && (
+                    <div className="p-3 rounded-lg bg-rose-50 border border-rose-100 text-rose-600 text-xs font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                        <AlertCircle size={14} /> {error}
+                    </div>
+                )}
+
+                <Button type="submit" className="w-full h-11 text-base shadow-lg shadow-blue-200 mt-2">
+                    Login to Portal
+                </Button>
+            </form>
+        </div>
+        <div className="bg-slate-50 p-4 text-center text-[10px] text-slate-400 border-t border-slate-100">
+            Secure Access • 256-bit Encryption • v2.4.0
+        </div>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-700">
-        {[
-          { id: 'student', label: 'Student Portal', icon: GraduationCap, color: 'blue', desc: 'View clearance status, pay dues & apply for emergency.' },
-          { id: 'officer', label: 'Officer Portal', icon: Stamp, color: 'emerald', desc: 'Process requests, verify documents & manage queue.' },
-          { id: 'admin', label: 'Admin Portal', icon: ShieldAlert, color: 'slate', desc: 'System configuration, user management & analytics.' }
-        ].map(portal => (
-          <button 
-            key={portal.id}
-            onClick={() => onLogin(portal.id)}
-            className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center group"
-          >
-            <div className={`w-16 h-16 rounded-full bg-${portal.color}-50 text-${portal.color}-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-              <portal.icon size={32} />
-            </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">{portal.label}</h3>
-            <p className="text-sm text-slate-500 leading-relaxed mb-6 h-10">{portal.desc}</p>
-            <div className={`mt-auto px-6 py-2 rounded-full bg-${portal.color}-50 text-${portal.color}-700 font-bold text-sm group-hover:bg-${portal.color}-600 group-hover:text-white transition-colors`}>
-              Login as {portal.label.split(' ')[0]}
-            </div>
-          </button>
-        ))}
-      </div>
-      
-      <p className="mt-12 text-slate-400 text-sm">© 2025 University Clearance System. Secure Access.</p>
     </div>
   );
 };
@@ -1028,7 +1113,7 @@ const LoginView = ({ onLogin }) => {
 export default function App() {
   const [role, setRole] = useState('student');
   const [view, setView] = useState('dashboard');
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // NEW STATE FOR LOGIN
+  const [currentUserId, setCurrentUserId] = useState(null); // STORES LOGGED IN USER ID
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
@@ -1040,20 +1125,40 @@ export default function App() {
   const [emergencyRequests, setEmergencyRequests] = useState(INITIAL_EMERGENCY_REQUESTS);
   const [config, setConfig] = useState(DEFAULT_CONFIG);
 
+  // Active user is derived from the currently logged in ID
   const activeUser = useMemo(() => {
-     if(role === 'student') return users.find(u => u.role === 'Student') || null;
-     if(role === 'officer') return users.find(u => u.role === 'Officer') || null;
-     if(role === 'admin') return users.find(u => u.role === 'Admin') || null;
-     return null;
-  }, [role, users]);
+     return users.find(u => u.id === currentUserId) || null;
+  }, [currentUserId, users]);
 
-  // NEW: Handle Emergency Submit correctly (Updates Users + Requests)
+  // LOGIN HANDLER
+  const handleLogin = (idInput, passInput, setErrorCallback) => {
+      const user = users.find(u => {
+          const isPassMatch = u.password === passInput;
+          // Check if input matches Student ID OR Email OR Name
+          const isIdMatch = u.studentId === idInput || u.email === idInput || u.name === idInput;
+          return isIdMatch && isPassMatch;
+      });
+
+      if (user) {
+          setRole(user.role.toLowerCase()); // 'Student' -> 'student'
+          setCurrentUserId(user.id);
+          setView('dashboard');
+      } else {
+          setErrorCallback('Invalid credentials. Please check your ID/Email and Password.');
+      }
+  };
+
+  const handleLogout = () => {
+      setCurrentUserId(null);
+      setRole('student');
+      setView('dashboard');
+  };
+
   const handleEmergencySubmit = (student, form) => {
       if(student.emergencyQuotaUsed >= config.maxEmergencyRequestsPerYear) {
           alert("Yearly emergency quota exceeded.");
           return false;
       }
-      // 1. Add Request
       const newRequest = {
           id: Date.now(),
           studentId: student.studentId,
@@ -1063,10 +1168,7 @@ export default function App() {
           approvals: { dept: 'Pending', library: 'Pending', hostel: 'Pending', finance: 'Pending' }
       };
       setEmergencyRequests(prev => [...prev, newRequest]);
-
-      // 2. Increment Quota for User
       setUsers(prev => prev.map(u => u.id === student.id ? { ...u, emergencyQuotaUsed: u.emergencyQuotaUsed + 1 } : u));
-
       addNotification({ title: 'Emergency Request Submitted', msg: 'Your request is being processed on priority.', targetRole: 'student', targetId: student.studentId });
       addNotification({ title: '🚨 Emergency Alert', msg: `${student.name} initiated emergency clearance.`, targetRole: 'officer' });
       return true;
@@ -1118,17 +1220,6 @@ export default function App() {
   };
 
   const renderContent = () => {
-    if (!activeUser) {
-        return (
-            <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8 animate-in fade-in">
-                <div className="bg-slate-100 p-6 rounded-full mb-6 border-4 border-slate-200"><UserX size={64} className="text-slate-400" /></div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">No Account Found</h2>
-                <p className="text-slate-500 max-w-md mb-6">There are no active users for the <span className="font-bold capitalize">{role}</span> role.</p>
-                <Button onClick={() => setIsLoggedIn(false)}>Return to Login</Button>
-            </div>
-        );
-    }
-
     if (view === 'certificate') {
        if(role === 'student') {
             const studentItems = clearanceDatabase.filter(item => item.studentId === activeUser.studentId);
@@ -1223,8 +1314,8 @@ export default function App() {
   }, []);
 
   // --- RENDER LOGIN IF NOT LOGGED IN ---
-  if (!isLoggedIn) {
-      return <LoginView onLogin={(selectedRole) => { setRole(selectedRole); setIsLoggedIn(true); setView('dashboard'); }} />;
+  if (!currentUserId) {
+      return <LoginView onLogin={handleLogin} />;
   }
 
   return (
@@ -1269,7 +1360,7 @@ export default function App() {
             </nav>
 
             <div className="p-4 border-t border-blue-100/50">
-                <button onClick={() => setIsLoggedIn(false)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all ${!isSidebarOpen && 'justify-center'}`}>
+                <button onClick={handleLogout} className={`w-full flex items-center gap-3 p-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all ${!isSidebarOpen && 'justify-center'}`}>
                     <LogOut size={20} />
                     {isSidebarOpen && <span className="font-medium">Logout</span>}
                 </button>
