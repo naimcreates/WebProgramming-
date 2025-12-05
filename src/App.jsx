@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye, CalendarCheck, Filter, PieChart, Lock, UserX, Siren, Timer, FileWarning, ExternalLink, Key, MessageSquare, Search, ChevronDown, Download
+  LayoutDashboard, FileText, CheckCircle, XCircle, Clock, CreditCard, Calendar, Bell, Menu, User, LogOut, UploadCloud, QrCode, Printer, Users, TrendingUp, AlertCircle, Settings, Trash2, BookOpen, Beaker, Home, GraduationCap, Stamp, Plus, ToggleLeft, ToggleRight, Check, X, ShieldAlert, Edit2, Shield, ChevronLeft, Mail, Phone, Hash, MapPin, Eye, CalendarCheck, Filter, PieChart, Lock, UserX, Siren, Timer, FileWarning, ExternalLink, Key, MessageSquare, Search, ChevronDown, Download, Activity
 } from 'lucide-react';
 
 // --- 1. CONSTANTS & REAL-WORLD DATA ---
@@ -13,7 +13,6 @@ const DEFAULT_CONFIG = {
     maxEmergencyRequestsPerYear: 2
 };
 
-// REMOVED 'My Profile' from menu items as requested
 const menuItems = {
   student: [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,7 +23,7 @@ const menuItems = {
   officer: [
     { id: 'dashboard', label: 'Queue Management', icon: LayoutDashboard },
     { id: 'officer-appointments', label: 'Appointments', icon: Calendar },
-    { id: 'analytics', label: 'Department Analytics', icon: PieChart },
+    { id: 'analytics', label: 'Department Analytics', icon: Activity },
   ],
   admin: [
     { id: 'dashboard', label: 'System Overview', icon: LayoutDashboard },
@@ -33,7 +32,6 @@ const menuItems = {
   ]
 };
 
-// ADDED PASSWORDS FOR LOGIN SIMULATION
 const INITIAL_USERS = [
     { 
         id: 1, 
@@ -83,7 +81,6 @@ const INITIAL_USERS = [
         phone: '+1 (555) 222-3333', 
         emergencyQuotaUsed: 1 
     },
-    // --- NEW OFFICERS FOR DEPT WISE LOGIN ---
     { 
         id: 10, 
         name: 'Mrs. Pince', 
@@ -310,7 +307,7 @@ const StatusBadge = ({ status, isEmergency }) => {
   };
   const safeStyle = styles[status] || styles.Pending;
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 w-fit whitespace-nowrap ${safeStyle}`}>
+    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 w-fit whitespace-nowrap ${safeStyle} shadow-sm`}>
       {status === 'Approved' || status === 'Confirmed' || status === 'Cleared' || status === 'Active' ? <CheckCircle size={12} /> : <Clock size={12} />}
       {status}
     </span>
@@ -322,7 +319,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white">
           <h3 className="font-bold text-lg text-slate-800">{title}</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
         </div>
@@ -332,7 +329,6 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   );
 };
 
-// --- UTILITY: COUNTDOWN TIMER ---
 const CountDownTimer = ({ submissionTime, durationHours }) => {
     const [timeLeft, setTimeLeft] = useState('');
     
@@ -359,7 +355,6 @@ const CountDownTimer = ({ submissionTime, durationHours }) => {
     return <span>{timeLeft}</span>;
 };
 
-// --- UTILITY: TIME AGO CALCULATOR ---
 const TimeAgo = ({ timestamp }) => {
     const [timeString, setTimeString] = useState('');
 
@@ -398,7 +393,7 @@ const LoginView = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 border border-slate-100">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 border border-slate-100">
         <div className="p-8 pb-6 border-b border-slate-100 text-center bg-slate-50/50">
             <div className="w-16 h-16 bg-blue-700 rounded-xl flex items-center justify-center text-white shadow-lg mx-auto mb-4 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-tr from-blue-800 to-indigo-600"></div>
@@ -409,7 +404,7 @@ const LoginView = ({ onLogin }) => {
         </div>
 
         <div className="p-8 pt-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">
                         User ID / Email
@@ -452,7 +447,7 @@ const LoginView = ({ onLogin }) => {
                     </div>
                 )}
 
-                <Button type="submit" className="w-full h-11 text-base shadow-lg shadow-blue-200 mt-2">
+                <Button type="submit" className="w-full h-11 text-base shadow-lg shadow-blue-200 mt-4">
                     Login to Portal
                 </Button>
             </form>
@@ -566,69 +561,111 @@ const ProfileView = ({ user }) => {
     );
 };
 
-const CertificateView = ({ studentProfile, activeEmergency, isCleared }) => {
+const CertificateView = ({ studentProfile, isCleared }) => {
+    // Determine certificate type: 
+    // IF isCleared (all due cleared) => Original
+    // ELSE IF NOT isCleared (implying access granted via emergency) => Provisional
+    const isProvisional = !isCleared;
+
     return (
-        <div className="max-w-4xl mx-auto p-4 md:p-8 animate-in fade-in duration-500">
-            <div className="bg-white p-8 md:p-12 rounded-xl shadow-2xl border-[16px] border-double border-slate-100 text-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-32 h-32 border-t-[32px] border-l-[32px] border-blue-900/10 rounded-br-3xl"></div>
-                <div className="absolute bottom-0 right-0 w-32 h-32 border-b-[32px] border-r-[32px] border-blue-900/10 rounded-tl-3xl"></div>
+        <div className="max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in duration-500">
+            {/* --- CERTIFICATE CONTAINER WITH DECORATIVE BORDER --- */}
+            <div className="bg-[#fdfbf7] p-10 md:p-20 rounded-sm shadow-2xl border-8 double border-slate-800 relative overflow-hidden text-center" style={{ fontFamily: 'Times New Roman, serif' }}>
                 
-                <div className="relative z-10 space-y-6">
-                    <div className="flex justify-center mb-6">
-                        <div className="w-20 h-20 bg-blue-900 text-white rounded-full flex items-center justify-center">
-                            <GraduationCap size={48} />
+                {/* --- WATERMARK --- */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
+                    <GraduationCap size={600} />
+                </div>
+
+                {/* --- CORNER DECORATIONS --- */}
+                <div className="absolute top-4 left-4 w-24 h-24 border-t-4 border-l-4 border-slate-800 rounded-tl-3xl"></div>
+                <div className="absolute top-4 right-4 w-24 h-24 border-t-4 border-r-4 border-slate-800 rounded-tr-3xl"></div>
+                <div className="absolute bottom-4 left-4 w-24 h-24 border-b-4 border-l-4 border-slate-800 rounded-bl-3xl"></div>
+                <div className="absolute bottom-4 right-4 w-24 h-24 border-b-4 border-r-4 border-slate-800 rounded-br-3xl"></div>
+
+                <div className="relative z-10 flex flex-col items-center">
+                    
+                    {/* --- HEADER --- */}
+                    <div className="mb-8">
+                        <div className="mx-auto w-24 h-24 bg-slate-900 text-[#fdfbf7] rounded-full flex items-center justify-center mb-4 shadow-lg">
+                            <Shield size={48} fill="currentColor" />
                         </div>
+                        <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-wide uppercase mb-2">University of Technology</h1>
+                        <p className="text-slate-600 uppercase tracking-[0.3em] text-sm font-semibold">Office of the Registrar</p>
                     </div>
-                    
-                    <h1 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 tracking-tight">
-                        {activeEmergency ? "Provisional Clearance Certificate" : "Official Clearance Certificate"}
-                    </h1>
-                    
-                    <p className="text-slate-500 uppercase tracking-[0.2em] font-medium text-sm">University Registrar Office</p>
-                    
-                    <div className="py-8 my-8 border-t border-b border-slate-100">
-                        <p className="text-lg text-slate-600 mb-2">This is to certify that</p>
-                        <h2 className="text-3xl font-bold text-blue-900 mb-4 font-serif">{studentProfile.name}</h2>
-                        <p className="text-lg text-slate-600">
-                            Student ID: <span className="font-bold text-slate-800">{studentProfile.studentId}</span> • 
-                            Department: <span className="font-bold text-slate-800">{studentProfile.dept}</span>
-                        </p>
-                        <p className="text-slate-600 mt-4 max-w-2xl mx-auto leading-relaxed">
-                            Has successfully {activeEmergency ? "been granted emergency clearance overriding pending dues" : "cleared all departmental and administrative dues"} for the semester ending {new Date().getFullYear()}. 
-                            {activeEmergency ? " This document is valid for 30 days pending final reconciliation." : " The student is hereby cleared for graduation protocols."}
-                        </p>
+
+                    {/* --- TITLE --- */}
+                    <div className="mb-10 w-full">
+                        <div className="h-px bg-slate-300 w-full mb-1"></div>
+                        <div className="h-px bg-slate-300 w-full"></div>
+                        <h2 className={`text-4xl md:text-5xl font-bold my-8 ${isProvisional ? 'text-amber-700' : 'text-slate-800'}`} style={{ fontFamily: 'Pinyon Script, cursive' }}>
+                            {isProvisional ? "Provisional Clearance Certificate" : "Official Clearance Certificate"}
+                        </h2>
+                        <div className="h-px bg-slate-300 w-full mb-1"></div>
+                        <div className="h-px bg-slate-300 w-full"></div>
                     </div>
-                    
-                    <div className="flex justify-between items-end px-12 mt-12">
-                        <div className="text-center">
-                            <div className="h-16 flex items-end justify-center">
-                                <span className="font-dancing-script text-2xl text-blue-800">Sarah Jenkins</span>
-                            </div>
-                            <div className="w-48 h-px bg-slate-300 mt-2"></div>
-                            <p className="text-xs uppercase font-bold text-slate-400 mt-2 tracking-wider">Registrar Signature</p>
+
+                    {/* --- BODY --- */}
+                    <div className="max-w-3xl mx-auto space-y-6 text-lg md:text-xl text-slate-800 leading-relaxed">
+                        <p className="italic text-slate-500">This is to certify that</p>
+                        
+                        <div className="text-4xl font-bold text-slate-900 my-4 border-b-2 border-slate-800 inline-block pb-2 px-8">
+                            {studentProfile.name}
                         </div>
                         
+                        <div className="flex flex-col md:flex-row justify-center gap-4 md:gap-12 text-base md:text-lg font-semibold text-slate-700 uppercase tracking-wider mb-4">
+                            <span>ID: <span className="text-slate-900">{studentProfile.studentId}</span></span>
+                            <span>Dept: <span className="text-slate-900">{studentProfile.dept}</span></span>
+                        </div>
+
+                        <p>
+                            Has successfully completed all necessary clearance procedures for the 
+                            <span className="font-bold"> Fall 2025 Semester</span>.
+                        </p>
+
+                        <p className="text-base text-slate-600 max-w-2xl mx-auto">
+                            {isProvisional 
+                                ? "This certificate is issued provisionally based on approved emergency protocols. The student is pending final financial reconciliation but is cleared for immediate academic requirements."
+                                : "The student has cleared all departmental, library, hostel, and administrative dues. This certificate serves as official proof of clearance for graduation and convocation protocols."
+                            }
+                        </p>
+                    </div>
+
+                    {/* --- FOOTER / SIGNATURES --- */}
+                    <div className="mt-20 w-full grid grid-cols-1 md:grid-cols-3 gap-12 items-end">
                         <div className="text-center">
-                            <div className="w-24 h-24 border-4 border-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-2 opacity-80">
-                                <Stamp size={40} className="text-blue-900 rotate-[-15deg]" />
+                            <div className="border-b border-slate-400 pb-2 mb-2 font-dancing-script text-2xl text-blue-900">Sarah Jenkins</div>
+                            <p className="text-xs uppercase font-bold text-slate-500 tracking-wider">Registrar</p>
+                        </div>
+
+                        <div className="text-center flex justify-center">
+                            <div className="w-32 h-32 border-4 border-double border-slate-300 rounded-full flex items-center justify-center relative">
+                                <div className="absolute inset-2 border border-slate-200 rounded-full"></div>
+                                <Stamp size={48} className="text-blue-900 opacity-80 rotate-[-12deg]" />
+                                <span className="absolute bottom-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">Official Seal</span>
                             </div>
-                            <p className="text-xs uppercase font-bold text-slate-400 tracking-wider">Official Seal</p>
                         </div>
 
                         <div className="text-center">
-                            <div className="h-16 flex items-end justify-center">
-                                <span className="font-mono text-sm text-slate-600">{SYSTEM_DATE}</span>
-                            </div>
-                            <div className="w-48 h-px bg-slate-300 mt-2"></div>
-                            <p className="text-xs uppercase font-bold text-slate-400 mt-2 tracking-wider">Date of Issue</p>
+                            <div className="border-b border-slate-400 pb-2 mb-2 font-mono text-lg text-slate-800">{SYSTEM_DATE}</div>
+                            <p className="text-xs uppercase font-bold text-slate-500 tracking-wider">Date of Issue</p>
                         </div>
                     </div>
 
-                    <div className="mt-12 pt-8 border-t border-dashed border-slate-200">
-                         <Button onClick={() => window.print()} className="mx-auto" icon={Download}>Download PDF Copy</Button>
-                    </div>
                 </div>
             </div>
+
+            {/* --- ACTION BAR --- */}
+            <div className="mt-8 flex justify-center gap-4 print:hidden">
+                <Button onClick={() => window.print()} icon={Printer}>Print Certificate</Button>
+                <Button variant="secondary" icon={Download}>Download PDF</Button>
+            </div>
+            
+            {/* Style for script font fallback */}
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap');
+                .font-dancing-script { font-family: 'cursive'; } 
+            `}</style>
         </div>
     );
 };
@@ -749,12 +786,22 @@ const GuidelinesView = () => (
     </div>
 );
 
-const AdminUserManagement = ({ users, setUsers, addNotification }) => {
+const AdminUserManagement = ({ users, setUsers, addNotification, addUser }) => {
+    const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+    const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Student', dept: '', studentId: '' });
+
+    const handleAddUser = (e) => {
+        e.preventDefault();
+        addUser(newUser);
+        setIsAddUserModalOpen(false);
+        setNewUser({ name: '', email: '', role: 'Student', dept: '', studentId: '' });
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-slate-800">User Management</h2>
-                <Button icon={Plus}>Add New User</Button>
+                <Button icon={Plus} onClick={() => setIsAddUserModalOpen(true)}>Add New User</Button>
             </div>
             <Card noPadding className="overflow-hidden">
                 <table className="w-full text-left border-collapse">
@@ -783,6 +830,40 @@ const AdminUserManagement = ({ users, setUsers, addNotification }) => {
                     </tbody>
                 </table>
             </Card>
+
+            <Modal isOpen={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} title="Add New User">
+                <form onSubmit={handleAddUser} className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
+                        <input required className="w-full p-3 border border-slate-200 rounded-xl" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} placeholder="John Doe" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                        <input required type="email" className="w-full p-3 border border-slate-200 rounded-xl" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} placeholder="john@uni.edu" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Role</label>
+                            <select className="w-full p-3 border border-slate-200 rounded-xl bg-white" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
+                                <option>Student</option>
+                                <option>Officer</option>
+                                <option>Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Department</label>
+                            <input className="w-full p-3 border border-slate-200 rounded-xl" value={newUser.dept} onChange={e => setNewUser({...newUser, dept: e.target.value})} placeholder="e.g. CSE or Library" />
+                        </div>
+                    </div>
+                    {newUser.role === 'Student' && (
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Student ID</label>
+                            <input required className="w-full p-3 border border-slate-200 rounded-xl" value={newUser.studentId} onChange={e => setNewUser({...newUser, studentId: e.target.value})} placeholder="011..." />
+                        </div>
+                    )}
+                    <Button type="submit" fullWidth>Create Account</Button>
+                </form>
+            </Modal>
         </div>
     );
 };
@@ -829,6 +910,7 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, h
   const [emergencyForm, setEmergencyForm] = useState({ type: 'Medical', reason: '', date: '', phone: '', file: null });
 
   const activeEmergency = emergencyRequests.find(req => req.studentId === studentProfile.studentId && req.status !== 'Closed');
+  const isEmergencyApproved = activeEmergency && activeEmergency.status === 'Approved';
   
   const onSubmitEmergency = (e) => {
       e.preventDefault();
@@ -889,21 +971,30 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, h
   const radius = (baseSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
+  // LOGIC UPDATE FOR BUTTON:
+  const canDownload = isCleared || isEmergencyApproved;
+  const buttonText = isCleared 
+    ? 'Download Certificate' 
+    : isEmergencyApproved 
+        ? 'Download Provisional' 
+        : `${totalItems - completedCount} Steps Remaining`;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* UPDATE EMERGENCY BANNER STYLE */}
       {activeEmergency && (
-          <div className={`p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-l-4 ${activeEmergency.status === 'Approved' ? 'bg-emerald-50 border-l-emerald-500' : 'bg-rose-50 border-l-rose-500'}`}>
+          <div className={`p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-l-4 ${isEmergencyApproved ? 'bg-emerald-50 border-l-emerald-500' : 'bg-rose-50 border-l-rose-500'}`}>
               <div className="space-y-1">
-                  <h3 className={`font-bold flex items-center gap-2 text-lg ${activeEmergency.status === 'Approved' ? 'text-emerald-800' : 'text-rose-800'}`}>
-                      {activeEmergency.status === 'Approved' ? <CheckCircle size={24} /> : <Siren size={24} className="animate-pulse"/>}
-                      {activeEmergency.status === 'Approved' ? 'Emergency Clearance Approved' : 'Active Emergency Clearance'}
+                  <h3 className={`font-bold flex items-center gap-2 text-lg ${isEmergencyApproved ? 'text-emerald-800' : 'text-rose-800'}`}>
+                      {isEmergencyApproved ? <CheckCircle size={24} /> : <Siren size={24} className="animate-pulse"/>}
+                      {isEmergencyApproved ? 'Emergency Clearance Approved' : 'Active Emergency Clearance'}
                   </h3>
-                  <p className={`text-sm ${activeEmergency.status === 'Approved' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  <p className={`text-sm ${isEmergencyApproved ? 'text-emerald-700' : 'text-rose-700'}`}>
                     Reason: <span className="font-medium">{activeEmergency.reason}</span> • Type: {activeEmergency.type}
                   </p>
               </div>
               <div className="text-right bg-white/50 px-4 py-2 rounded-lg border border-white/50">
-                  {activeEmergency.status === 'Approved' ? (
+                  {isEmergencyApproved ? (
                       <Button onClick={() => onNavigate('certificate')} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200">View Certificate</Button>
                   ) : (
                       <>
@@ -918,10 +1009,10 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, h
           </div>
       )}
 
+      {/* ... (Rest of layout matches previous, just updated button logic) ... */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="col-span-2 p-0 bg-blue-700 text-white border-none overflow-hidden relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-700 to-indigo-800 opacity-90"></div>
-          {/* Decorative background elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
           
           <div className="relative z-10 p-8 flex flex-col md:flex-row justify-between items-center gap-8">
@@ -979,20 +1070,20 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, h
           </div>
         </Card>
         
-        <Card className="p-8 flex flex-col justify-center items-center text-center border-slate-200 hover:border-blue-300 h-full">
-          <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 text-blue-600 shadow-sm">
+        <Card className="p-8 flex flex-col justify-center items-center text-center border border-slate-200 hover:border-blue-300 h-full bg-gradient-to-b from-white to-blue-50/50 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6 text-blue-600 shadow-inner group-hover:scale-110 transition-transform duration-300">
              <GraduationCap size={40} />
           </div>
           <h3 className="text-xl font-bold text-slate-800 mb-2">Final Clearance</h3>
           <p className="text-sm text-slate-500 mb-8 leading-relaxed max-w-[200px]">Certificate available upon 100% completion or via Emergency Override.</p>
           <Button 
-             disabled={!isCleared && (!activeEmergency || activeEmergency.status !== 'Approved')} 
+             disabled={!canDownload} 
              onClick={() => onNavigate('certificate')} 
              fullWidth
-             variant={isCleared || activeEmergency?.status === 'Approved' ? 'primary' : 'secondary'}
-             className={isCleared || activeEmergency?.status === 'Approved' ? '' : 'opacity-50 cursor-not-allowed'}
+             variant={canDownload ? 'primary' : 'secondary'}
+             className={canDownload ? 'shadow-lg shadow-blue-200/50' : 'opacity-60 cursor-not-allowed'}
           >
-             {isCleared ? 'Download Certificate' : activeEmergency?.status === 'Approved' ? 'Download Provisional' : `${totalItems - completedCount} Steps Remaining`}
+             {buttonText}
           </Button>
         </Card>
       </div>
@@ -1004,7 +1095,7 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, h
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {myItems.map((item) => (
-            <Card key={item.id} className={`p-0 flex flex-col h-full overflow-hidden border-l-4 ${item.status === 'Approved' ? 'border-l-emerald-500' : item.status === 'Rejected' ? 'border-l-rose-500' : 'border-l-amber-500'} ${activeEmergency ? 'ring-2 ring-rose-100' : ''}`}>
+            <Card key={item.id} className={`p-0 flex flex-col h-full overflow-hidden border-l-4 ${item.status === 'Approved' ? 'border-l-emerald-500' : item.status === 'Rejected' ? 'border-l-rose-500' : 'border-l-amber-500'} ${!!activeEmergency && !isEmergencyApproved ? 'ring-2 ring-rose-100' : ''}`}>
               <div className="p-6 pb-4 flex justify-between items-start">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-600">{getIconForType(item.type)}</div>
@@ -1013,7 +1104,7 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, h
                       <p className="text-xs text-slate-500 font-medium tracking-wide uppercase mt-0.5">{item.type} Module</p>
                   </div>
                 </div>
-                <StatusBadge status={item.status} isEmergency={!!activeEmergency && item.status !== 'Approved'} />
+                <StatusBadge status={item.status} isEmergency={!!activeEmergency && item.status !== 'Approved' && !isEmergencyApproved} />
               </div>
               
               <div className="px-6 flex-1 space-y-4">
@@ -1206,7 +1297,7 @@ const AdminAnalytics = ({ clearanceItems, emergencyRequests, handleAdminOverride
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[{ label: 'Active Requests', value: total, icon: <Users />, color: 'bg-blue-500' }, { label: 'Approvals', value: approved, icon: <CheckCircle />, color: 'bg-emerald-500' }, { label: 'Pending Action', value: pending, icon: <AlertCircle />, color: 'bg-amber-500' }].map((stat, i) => (
-          <Card key={i} className="p-6 flex items-center gap-5 border-none shadow-md hover:shadow-lg">
+          <Card key={i} className="p-6 flex items-center gap-5 border-none shadow-md hover:shadow-lg transition-all duration-200">
               <div className={`p-4 rounded-xl text-white shadow-lg ${stat.color}`}>{stat.icon}</div>
               <div>
                   <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
@@ -1249,33 +1340,85 @@ const AdminAnalytics = ({ clearanceItems, emergencyRequests, handleAdminOverride
 
 const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNotification, emergencyRequests, onEmergencyApprove }) => {
   const selectedUnit = activeUser.dept; 
-  const [selectedRequestId, setSelectedRequestId] = useState(null); // CHANGED TO ID FOR FRESH DATA
+  const [selectedRequestId, setSelectedRequestId] = useState(null); 
   const [comment, setComment] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const urgentRequests = emergencyRequests.filter(req => req.status === 'Active');
 
-  const queue = clearanceItems.filter(item => {
-      if (item.unit !== selectedUnit) return false;
-      const isUrgent = urgentRequests.some(r => r.studentId === item.studentId);
-      if (isUrgent && item.status !== 'Approved') return true; 
-      return ['Pending', 'Reviewing', 'Submitted'].includes(item.status);
-  });
+  const queue = useMemo(() => {
+      // 1. FILTERING LOGIC
+      let filtered = clearanceItems;
 
-  // DERIVE SELECTED REQUEST FROM PROPS TO ENSURE FRESH DATA
-  const selectedRequest = useMemo(() => 
-    clearanceItems.find(item => item.id === selectedRequestId), 
-  [clearanceItems, selectedRequestId]);
+      if (searchTerm) {
+          // SEARCH MODE: Filter by ID or Name
+          const term = searchTerm.toLowerCase();
+          filtered = filtered.filter(item => 
+              item.studentId.toLowerCase().includes(term) || 
+              item.studentName.toLowerCase().includes(term)
+          );
+
+          // REGISTRAR SPECIAL ACCESS: Can see items from other units if searching
+          if (activeUser.dept !== 'Registrar Office') {
+               filtered = filtered.filter(item => item.unit === selectedUnit);
+          }
+      } else {
+          // DEFAULT MODE: Pending/Active items for MY UNIT only
+          filtered = filtered.filter(item => {
+              if (item.unit !== selectedUnit) return false;
+              const isUrgent = urgentRequests.some(r => r.studentId === item.studentId);
+              if (isUrgent && item.status !== 'Approved') return true; 
+              return ['Pending', 'Reviewing', 'Submitted'].includes(item.status);
+          });
+      }
+
+      // 2. DEDUPLICATION (For Search Mode mainly)
+      // If we show multiple units for same student, user might get confused. 
+      // Let's show unique Students. For each student, pick the most relevant item (My Unit > First Available)
+      const uniqueStudents = [];
+      const studentMap = new Map();
+
+      filtered.forEach(item => {
+          if (!studentMap.has(item.studentId)) {
+              studentMap.set(item.studentId, []);
+          }
+          studentMap.get(item.studentId).push(item);
+      });
+
+      studentMap.forEach((items, studentId) => {
+          // Try to find item for THIS unit
+          let bestItem = items.find(i => i.unit === selectedUnit);
+          // If not found (Registrar searching global), pick first
+          if (!bestItem) bestItem = items[0];
+          uniqueStudents.push(bestItem);
+      });
+
+      return uniqueStudents;
+  }, [clearanceItems, searchTerm, selectedUnit, urgentRequests, activeUser.dept]);
+
+  // DERIVE SELECTED REQUEST
+  const selectedRequest = useMemo(() => {
+      if (!selectedRequestId) return null;
+      let item = clearanceItems.find(item => item.id === selectedRequestId);
+      
+      // REGISTRAR CONTEXT SWITCH:
+      // If I selected an item that is NOT 'Registrar Office' (via search), 
+      // try to find the corresponding 'Registrar Office' item for that student to allow actions.
+      if (item && activeUser.dept === 'Registrar Office' && item.unit !== 'Registrar Office') {
+          const registrarItem = clearanceItems.find(i => i.studentId === item.studentId && i.unit === 'Registrar Office');
+          if (registrarItem) return registrarItem; 
+          // If no registrar item exists, return original (view only)
+      }
+      return item;
+  }, [clearanceItems, selectedRequestId, activeUser.dept]);
 
   const studentFullClearance = selectedRequest ? clearanceItems.filter(item => item.studentId === selectedRequest.studentId && item.unit !== 'Registrar Office') : [];
   const allOthersApproved = studentFullClearance.every(item => item.status === 'Approved');
   
-  // Check if selected student has an ACTIVE emergency request
   const activeStudentEmergency = selectedRequest ? urgentRequests.find(r => r.studentId === selectedRequest.studentId) : null;
 
-  // Calculate Stats
-  const pendingCount = queue.length;
+  const pendingCount = clearanceItems.filter(item => item.unit === selectedUnit && ['Pending', 'Reviewing'].includes(item.status)).length;
   const totalProcessed = clearanceItems.filter(i => i.unit === selectedUnit && i.status !== 'Pending').length;
-  const urgentCount = urgentRequests.length;
 
   const handleAction = (status) => {
     if (!selectedRequest) return;
@@ -1291,13 +1434,11 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
       const currentStatus = updatedChecklist[index].status;
       const newStatus = isPositiveStatus(currentStatus) ? 'Pending' : 'Cleared';
       updatedChecklist[index] = { ...updatedChecklist[index], status: newStatus };
-      
-      // UPDATE MAIN DATABASE IMMEDIATELY
       updateClearanceItem(selectedRequest.id, { checklist: updatedChecklist });
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)]">
+    <div className="flex flex-col h-full">
       {urgentRequests.length > 0 && (
           <div className="bg-rose-600 text-white p-3 flex justify-between items-center animate-pulse-slow">
               <span className="font-bold flex items-center gap-2"><Siren size={18}/> {urgentRequests.length} EMERGENCY REQUESTS PENDING</span>
@@ -1305,7 +1446,6 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
           </div>
       )}
 
-      {/* NEW DASHBOARD HEADER STATS */}
       <div className="bg-white border-b border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
          <div>
             <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -1315,11 +1455,11 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
             <p className="text-slate-500 text-sm mt-1">Manage student clearance requests and verifications</p>
          </div>
          <div className="flex gap-3">
-            <div className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl flex flex-col items-center min-w-[100px]">
+            <div className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl flex flex-col items-center min-w-[100px] shadow-sm">
                 <span className="text-xs font-bold text-slate-400 uppercase">Pending</span>
                 <span className="text-xl font-black text-blue-600">{pendingCount}</span>
             </div>
-            <div className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl flex flex-col items-center min-w-[100px]">
+            <div className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl flex flex-col items-center min-w-[100px] shadow-sm">
                 <span className="text-xs font-bold text-slate-400 uppercase">Processed</span>
                 <span className="text-xl font-black text-emerald-600">{totalProcessed}</span>
             </div>
@@ -1331,20 +1471,26 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
         <Card className="w-1/3 flex flex-col rounded-none border-r border-t-0 border-b-0 border-l-0 shadow-none" noPadding>
             <div className="p-4 border-b border-slate-100 bg-white sticky top-0 z-10">
                 <div className="relative">
-                    <input type="text" placeholder="Search Student ID..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                    <input 
+                        type="text" 
+                        placeholder="Search Student ID..." 
+                        className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                     <Filter size={14} className="absolute left-3 top-3 text-slate-400" />
                 </div>
             </div>
-            <div className="overflow-y-auto flex-1">
+            <div className="overflow-y-auto flex-1 scrollbar-hide">
             {queue.map(item => {
                 const isUrgent = urgentRequests.some(r => r.studentId === item.studentId);
                 const isSelected = selectedRequestId === item.id;
                 return (
-                <div key={item.id} onClick={() => setSelectedRequestId(item.id)} className={`p-4 border-b border-slate-100 cursor-pointer transition-all hover:bg-slate-50 group relative ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}>
+                <div key={item.id} onClick={() => setSelectedRequestId(item.id)} className={`p-4 border-b border-slate-100 cursor-pointer transition-all duration-200 hover:bg-slate-50 group relative ${isSelected ? 'bg-blue-50/50' : 'bg-white'}`}>
                     {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>}
                     <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-3">
-                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'}`}>
+                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'}`}>
                                 {getInitials(item.studentName)}
                              </div>
                              <div>
@@ -1360,15 +1506,15 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
                     </div>
                 </div>
             )})}
-            {queue.length === 0 && (<div className="p-8 text-center text-slate-400 flex flex-col items-center h-full justify-center"><CheckCircle size={48} className="mb-4 opacity-10" /><p>All caught up!</p><p className="text-xs mt-1">No pending requests for {selectedUnit}.</p></div>)}
+            {queue.length === 0 && (<div className="p-8 text-center text-slate-400 flex flex-col items-center h-full justify-center"><CheckCircle size={48} className="mb-4 opacity-10" /><p>{searchTerm ? 'No student found' : 'All caught up!'}</p><p className="text-xs mt-1">{searchTerm ? 'Try a different ID' : `No pending requests for ${selectedUnit}.`}</p></div>)}
             </div>
         </Card>
 
         {/* RIGHT SIDE: DETAILS PANEL */}
-        <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex-1 p-8 overflow-y-auto scroll-smooth">
             {selectedRequest ? (
             <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
-                <Card className="mb-6 border-t-4 border-t-blue-600">
+                <Card className="mb-6 border-t-4 border-t-blue-600 shadow-lg">
                     <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-6">
                         <div>
                             <h1 className="text-3xl font-bold text-slate-800 mb-1">{selectedRequest.studentName}</h1>
@@ -1385,7 +1531,7 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
                 
                     {/* EMERGENCY BANNER & ACTION FOR REGISTRAR */}
                     {activeStudentEmergency && (
-                        <div className="mb-8 bg-rose-50 border border-rose-100 p-5 rounded-xl relative overflow-hidden">
+                        <div className="mb-8 bg-rose-50 border border-rose-100 p-5 rounded-xl relative overflow-hidden shadow-sm">
                             <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-rose-100 rounded-full blur-2xl"></div>
                             <div className="relative z-10">
                                 <div className="flex justify-between items-start">
@@ -1393,7 +1539,7 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
                                         <h4 className="font-bold text-rose-800 text-base flex items-center gap-2 mb-3">
                                             <Siren size={20} className="animate-pulse"/> 
                                             Emergency Override Request
-                                            <span className="ml-auto text-xs font-mono bg-rose-100 px-2 py-1 rounded text-rose-700 border border-rose-200">
+                                            <span className="ml-auto text-xs font-mono bg-rose-100 px-2 py-1 rounded text-rose-700 border border-rose-200 shadow-sm">
                                                 <Clock size={12} className="inline mr-1 mb-0.5"/>
                                                 <TimeAgo timestamp={activeStudentEmergency.submissionTime} />
                                             </span>
@@ -1422,15 +1568,16 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
                     )}
 
                     <div className="space-y-8">
+                        {/* REGISTRAR SEES ALL STATUSES */}
                         {selectedUnit === 'Registrar Office' && (
-                            <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                            <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 shadow-inner">
                                 <div className="flex justify-between items-center mb-4">
                                     <h4 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2"><Stamp size={16} className="text-slate-400" /> Departmental Clearances</h4>
-                                    {allOthersApproved ? <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold border border-emerald-200 flex items-center gap-1"><CheckCircle size={12}/> All Verified</span> : <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold border border-amber-200 flex items-center gap-1"><Clock size={12}/> Pending Signatures</span>}
+                                    {allOthersApproved ? <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold border border-emerald-200 flex items-center gap-1 shadow-sm"><CheckCircle size={12}/> All Verified</span> : <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold border border-amber-200 flex items-center gap-1 shadow-sm"><Clock size={12}/> Pending Signatures</span>}
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     {studentFullClearance.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
+                                        <div key={item.id} className="flex justify-between items-center text-sm p-3 bg-white rounded-lg border border-slate-200 shadow-sm transition-all hover:border-blue-200">
                                             <span className="font-medium text-slate-700">{item.unit}</span>
                                             <StatusBadge status={item.status} />
                                         </div>
@@ -1448,14 +1595,14 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
                                         <p className="text-xs text-blue-600 underline cursor-pointer mt-0.5 font-medium">{selectedRequest.uploadedFile}</p>
                                     </div>
                                 </div>
-                                <Button variant="secondary" className="h-9 text-xs bg-white" onClick={() => alert("Opening document preview...")} icon={Eye}>Preview</Button>
+                                <Button variant="secondary" className="h-9 text-xs bg-white shadow-sm" onClick={() => alert("Opening document preview...")} icon={Eye}>Preview</Button>
                             </div>
                         )}
                         
                         {selectedRequest.breakdown && (
                             <div>
                                 <h4 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2"><CreditCard size={16} className="text-slate-400"/> Financial Status</h4>
-                                <div className="bg-slate-50 rounded-xl p-0 border border-slate-200 overflow-hidden">
+                                <div className="bg-slate-50 rounded-xl p-0 border border-slate-200 overflow-hidden shadow-sm">
                                     <div className="divide-y divide-slate-200">
                                         {selectedRequest.breakdown.map((fee, idx) => (
                                             <div key={idx} className="flex justify-between text-sm p-4 hover:bg-slate-100 transition-colors">
@@ -1469,7 +1616,7 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
                                         <span className="font-mono text-xl font-black text-slate-900">TK {selectedRequest.fee.toFixed(2)}</span>
                                     </div>
                                 </div>
-                                <div className={`mt-3 p-3 rounded-lg text-center text-sm font-bold border flex items-center justify-center gap-2 ${selectedRequest.paid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                                <div className={`mt-3 p-3 rounded-lg text-center text-sm font-bold border flex items-center justify-center gap-2 shadow-sm ${selectedRequest.paid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
                                     {selectedRequest.paid ? <CheckCircle size={18}/> : <XCircle size={18}/>}
                                     {selectedRequest.paid ? 'PAYMENT VERIFIED & CLEARED' : 'PAYMENT PENDING'}
                                 </div>
@@ -1481,7 +1628,7 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
                                 <h4 className="text-sm font-bold text-slate-800 uppercase mb-4 flex items-center gap-2"><CheckCircle size={16} className="text-slate-400"/> Checklist Verification</h4>
                                 <div className="space-y-3">
                                     {selectedRequest.checklist.map((c, i) => (
-                                        <div key={i} className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group ${isPositiveStatus(c.status) ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md'}`} onClick={() => toggleChecklistItem(i)}>
+                                        <div key={i} className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group ${isPositiveStatus(c.status) ? 'bg-emerald-50 border-emerald-200 shadow-sm' : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md'}`} onClick={() => toggleChecklistItem(i)}>
                                             <div className="flex items-center gap-4">
                                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isPositiveStatus(c.status) ? 'bg-emerald-500 border-emerald-500 scale-110' : 'border-slate-300 bg-white group-hover:border-blue-400'}`}>
                                                     {isPositiveStatus(c.status) && <Check size={14} className="text-white" />}
@@ -1499,26 +1646,35 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
                     </div>
 
                     <div className="mt-8 pt-6 border-t border-slate-100">
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Officer Decision & Notes</label>
-                        <textarea 
-                            className="w-full border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 mb-4 resize-none h-32 bg-slate-50 transition-all" 
-                            placeholder="Enter any remarks regarding this application..." 
-                            value={comment} 
-                            onChange={(e) => setComment(e.target.value)} 
-                        />
-                        <div className="flex gap-4">
-                            <Button variant="danger" className="flex-1 h-12 text-base bg-white border-2 border-rose-100 text-rose-600 hover:bg-rose-50 hover:border-rose-200 shadow-none" onClick={() => handleAction('Rejected')}>
-                                <XCircle size={18} /> Reject Request
-                            </Button>
-                            <Button className="flex-[2] h-12 text-base shadow-xl shadow-blue-100" onClick={() => handleAction('Approved')} disabled={selectedUnit === 'Registrar Office' && !allOthersApproved}>
-                                <CheckCircle size={18} /> {selectedUnit === 'Registrar Office' && !allOthersApproved ? 'Waiting for other Depts' : 'Approve & Clear Student'}
-                            </Button>
-                        </div>
+                        {/* Only show actions if this is the correct unit */}
+                        {selectedRequest.unit === selectedUnit ? (
+                            <>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Officer Decision & Notes</label>
+                                <textarea 
+                                    className="w-full border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 mb-4 resize-none h-32 bg-slate-50 transition-all shadow-inner" 
+                                    placeholder="Enter any remarks regarding this application..." 
+                                    value={comment} 
+                                    onChange={(e) => setComment(e.target.value)} 
+                                />
+                                <div className="flex gap-4">
+                                    <Button variant="danger" className="flex-1 h-12 text-base bg-white border-2 border-rose-100 text-rose-600 hover:bg-rose-50 hover:border-rose-200 shadow-none" onClick={() => handleAction('Rejected')}>
+                                        <XCircle size={18} /> Reject Request
+                                    </Button>
+                                    <Button className="flex-[2] h-12 text-base shadow-xl shadow-blue-100" onClick={() => handleAction('Approved')} disabled={selectedUnit === 'Registrar Office' && !allOthersApproved}>
+                                        <CheckCircle size={18} /> {selectedUnit === 'Registrar Office' && !allOthersApproved ? 'Waiting for other Depts' : 'Approve & Clear Student'}
+                                    </Button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="p-4 bg-slate-50 text-slate-500 text-center text-sm rounded-lg border border-slate-200 shadow-sm">
+                                Viewing <b>{selectedRequest.unit}</b> clearance for this student. You can only approve <b>{selectedUnit}</b> items.
+                            </div>
+                        )}
                     </div>
                 </Card>
             </div>
             ) : (<div className="h-full flex flex-col items-center justify-center text-slate-400 animate-in fade-in zoom-in duration-300">
-                    <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+                    <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
                         <Users size={40} className="text-slate-300" />
                     </div>
                     <h3 className="text-xl font-bold text-slate-600">Select a Student</h3>
@@ -1529,6 +1685,31 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
     </div>
   );
 };
+
+const OfficerAnalytics = ({ clearanceItems }) => {
+    const [filter, setFilter] = useState('All');
+    const total = clearanceItems.length;
+    const approved = clearanceItems.filter(i => i.status === 'Approved').length;
+    const rejected = clearanceItems.filter(i => i.status === 'Rejected').length;
+    const rate = total > 0 ? Math.round((approved / total) * 100) : 0;
+    const historyItems = clearanceItems.filter(i => i.status !== 'Pending' && i.status !== 'Reviewing' && (filter === 'All' || i.status === filter));
+
+    return (
+        <div className="space-y-8 animate-in fade-in">
+            <div className="flex justify-between items-center"><div><h2 className="text-2xl font-bold text-slate-800">Analytics & History</h2><p className="text-slate-500">Overview of departmental performance and logs</p></div><div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm"><div className="p-1.5 bg-blue-50 text-blue-600 rounded"><Filter size={16} /></div><select className="text-sm font-medium text-slate-700 bg-transparent outline-none pr-2" value={filter} onChange={(e) => setFilter(e.target.value)}><option value="All">All Actions</option><option value="Approved">Approved Only</option><option value="Rejected">Rejected Only</option></select></div></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="p-5 flex items-center gap-4 border-blue-100 bg-blue-50/50"><div className="p-3 rounded-lg bg-blue-500 text-white shadow-lg shadow-blue-200"><TrendingUp size={20} /></div><div><p className="text-xs font-bold uppercase text-blue-600 mb-1">Clearance Rate</p><p className="text-2xl font-bold text-slate-800">{rate}%</p></div></Card>
+                <Card className="p-5 flex items-center gap-4 border-emerald-100 bg-emerald-50/50"><div className="p-3 rounded-lg bg-emerald-500 text-white shadow-lg shadow-emerald-200"><CheckCircle size={20} /></div><div><p className="text-xs font-bold uppercase text-emerald-600 mb-1">Approved</p><p className="text-2xl font-bold text-slate-800">{approved}</p></div></Card>
+                <Card className="p-5 flex items-center gap-4 border-rose-100 bg-rose-50/50"><div className="p-3 rounded-lg bg-rose-500 text-white shadow-lg shadow-rose-200"><XCircle size={20} /></div><div><p className="text-xs font-bold uppercase text-rose-600 mb-1">Rejected</p><p className="text-2xl font-bold text-slate-800">{rejected}</p></div></Card>
+                <Card className="p-5 flex items-center gap-4 border-purple-100 bg-purple-50/50"><div className="p-3 rounded-lg bg-purple-500 text-white shadow-lg shadow-purple-200"><Activity size={20} /></div><div><p className="text-xs font-bold uppercase text-purple-600 mb-1">Total Processed</p><p className="text-2xl font-bold text-slate-800">{approved + rejected}</p></div></Card>
+            </div>
+            <Card className="p-0 overflow-hidden shadow-lg border-0">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center"><h3 className="font-bold text-slate-800 flex items-center gap-2"><Clock size={18} className="text-slate-400"/> Process Logs</h3><span className="text-xs font-mono text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">Total: {historyItems.length}</span></div>
+                <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50/50 font-bold border-b text-slate-500 uppercase text-xs"><tr><th className="p-4 w-1/6">Student ID</th><th className="p-4 w-1/4">Name</th><th className="p-4 w-1/4">Unit / Department</th><th className="p-4 w-1/6">Decision</th><th className="p-4 w-1/6">Note</th></tr></thead><tbody className="divide-y divide-slate-100">{historyItems.length === 0 ? (<tr><td colSpan="5" className="p-8 text-center text-slate-400 italic">No records found for the selected filter.</td></tr>) : historyItems.map(item => (<tr key={item.id} className="hover:bg-blue-50/30 transition-colors group"><td className="p-4 font-mono text-xs text-slate-600 font-bold">{item.studentId}</td><td className="p-4 font-medium text-slate-800">{item.studentName}</td><td className="p-4 text-slate-600">{item.unit}</td><td className="p-4"><StatusBadge status={item.status} /></td><td className="p-4 text-slate-500 text-xs max-w-xs truncate group-hover:whitespace-normal group-hover:overflow-visible transition-all" title={item.note}>{item.note || '-'}</td></tr>))}</tbody></table></div>
+            </Card>
+        </div>
+    )
+}
 
 const OfficerAppointments = ({ activeUser, appointments, updateAppointment }) => {
     const selectedUnit = activeUser.dept;
@@ -1544,8 +1725,8 @@ const OfficerAppointments = ({ activeUser, appointments, updateAppointment }) =>
     const handleDecision = (id, status) => updateAppointment(id, { status });
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] p-8 overflow-y-auto">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div className="space-y-8 animate-in fade-in">
+            <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Appointment Requests</h2>
                     <p className="text-slate-500 text-sm mt-1">Manage your meeting schedule</p>
@@ -1641,31 +1822,6 @@ const OfficerAppointments = ({ activeUser, appointments, updateAppointment }) =>
     );
 };
 
-const OfficerAnalytics = ({ clearanceItems }) => {
-    const [filter, setFilter] = useState('All');
-    const total = clearanceItems.length;
-    const approved = clearanceItems.filter(i => i.status === 'Approved').length;
-    const rejected = clearanceItems.filter(i => i.status === 'Rejected').length;
-    const rate = total > 0 ? Math.round((approved / total) * 100) : 0;
-    const historyItems = clearanceItems.filter(i => i.status !== 'Pending' && i.status !== 'Reviewing' && (filter === 'All' || i.status === filter));
-
-    return (
-        <div className="space-y-8 animate-in fade-in">
-            <div className="flex justify-between items-center"><div><h2 className="text-2xl font-bold text-slate-800">Analytics & History</h2><p className="text-slate-500">Overview of departmental performance and logs</p></div><div className="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm"><div className="p-1.5 bg-blue-50 text-blue-600 rounded"><Filter size={16} /></div><select className="text-sm font-medium text-slate-700 bg-transparent outline-none pr-2" value={filter} onChange={(e) => setFilter(e.target.value)}><option value="All">All Actions</option><option value="Approved">Approved Only</option><option value="Rejected">Rejected Only</option></select></div></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="p-5 flex items-center gap-4 border-blue-100 bg-blue-50/50"><div className="p-3 rounded-lg bg-blue-500 text-white shadow-lg shadow-blue-200"><TrendingUp size={20} /></div><div><p className="text-xs font-bold uppercase text-blue-600 mb-1">Clearance Rate</p><p className="text-2xl font-bold text-slate-800">{rate}%</p></div></Card>
-                <Card className="p-5 flex items-center gap-4 border-emerald-100 bg-emerald-50/50"><div className="p-3 rounded-lg bg-emerald-500 text-white shadow-lg shadow-emerald-200"><CheckCircle size={20} /></div><div><p className="text-xs font-bold uppercase text-emerald-600 mb-1">Approved</p><p className="text-2xl font-bold text-slate-800">{approved}</p></div></Card>
-                <Card className="p-5 flex items-center gap-4 border-rose-100 bg-rose-50/50"><div className="p-3 rounded-lg bg-rose-500 text-white shadow-lg shadow-rose-200"><XCircle size={20} /></div><div><p className="text-xs font-bold uppercase text-rose-600 mb-1">Rejected</p><p className="text-2xl font-bold text-slate-800">{rejected}</p></div></Card>
-                <Card className="p-5 flex items-center gap-4 border-purple-100 bg-purple-50/50"><div className="p-3 rounded-lg bg-purple-500 text-white shadow-lg shadow-purple-200"><PieChart size={20} /></div><div><p className="text-xs font-bold uppercase text-purple-600 mb-1">Total Processed</p><p className="text-2xl font-bold text-slate-800">{approved + rejected}</p></div></Card>
-            </div>
-            <Card className="p-0 overflow-hidden shadow-lg border-0">
-                <div className="p-6 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center"><h3 className="font-bold text-slate-800 flex items-center gap-2"><Clock size={18} className="text-slate-400"/> Process Logs</h3><span className="text-xs font-mono text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">Total: {historyItems.length}</span></div>
-                <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50/50 font-bold border-b text-slate-500 uppercase text-xs"><tr><th className="p-4 w-1/6">Student ID</th><th className="p-4 w-1/4">Name</th><th className="p-4 w-1/4">Unit / Department</th><th className="p-4 w-1/6">Decision</th><th className="p-4 w-1/6">Note</th></tr></thead><tbody className="divide-y divide-slate-100">{historyItems.length === 0 ? (<tr><td colSpan="5" className="p-8 text-center text-slate-400 italic">No records found for the selected filter.</td></tr>) : historyItems.map(item => (<tr key={item.id} className="hover:bg-blue-50/30 transition-colors group"><td className="p-4 font-mono text-xs text-slate-600 font-bold">{item.studentId}</td><td className="p-4 font-medium text-slate-800">{item.studentName}</td><td className="p-4 text-slate-600">{item.unit}</td><td className="p-4"><StatusBadge status={item.status} /></td><td className="p-4 text-slate-500 text-xs max-w-xs truncate group-hover:whitespace-normal group-hover:overflow-visible transition-all" title={item.note}>{item.note || '-'}</td></tr>))}</tbody></table></div>
-            </Card>
-        </div>
-    )
-}
-
 // --- MAIN APP ---
 export default function App() {
   const [role, setRole] = useState('student');
@@ -1736,6 +1892,12 @@ export default function App() {
       }
   }
 
+  const handleAddUser = (newUser) => {
+      const user = { ...newUser, id: Date.now(), status: 'Active', emergencyQuotaUsed: 0, password: '1234' };
+      setUsers(prev => [...prev, user]);
+      addNotification({ title: 'User Added', msg: `${user.name} added to the system.`, targetRole: 'admin' });
+  };
+
   const updateClearanceItem = (itemId, updates) => { setClearanceDatabase(prev => prev.map(item => item.id === itemId ? { ...item, ...updates } : item)); };
   const updateAppointment = (id, updates) => { setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a)); };
   const addAppointment = (newAppt) => { setAppointments(prev => [...prev, newAppt]); addNotification({ title: 'Appointment Booked', msg: `Booking request sent to ${newAppt.officer}.`, targetRole: 'student' }); }
@@ -1784,7 +1946,7 @@ export default function App() {
                  </div>
                );
             }
-            return <CertificateView studentProfile={activeUser} activeEmergency={emergencyApproved} isCleared={isCleared} />;
+            return <CertificateView studentProfile={activeUser} isCleared={isCleared} />;
        }
        return <CertificateView studentProfile={activeUser} isCleared={true} />;
     }
@@ -1798,6 +1960,7 @@ export default function App() {
             users={users} setUsers={setUsers} addNotification={addNotification} 
             setClearanceDatabase={setClearanceDatabase} setAppointments={setAppointments}
             emergencyRequests={emergencyRequests} setEmergencyRequests={setEmergencyRequests}
+            addUser={handleAddUser}
         />
     );
     
@@ -1821,6 +1984,11 @@ export default function App() {
   if (!currentUserId) {
       return <LoginView onLogin={handleLogin} />;
   }
+
+  // --- SCROLL FIX LOGIC ---
+  // If the view is the Officer Dashboard (Queue), we disable the main scroll because that component has its own split-pane scrolling.
+  // For all other views, we allow normal vertical scrolling.
+  const isFixedView = view === 'dashboard' && role === 'officer';
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden selection:bg-blue-100 selection:text-blue-900">
@@ -1909,8 +2077,15 @@ export default function App() {
                     )}
                 </div>
             </header>
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 w-full scroll-smooth">
-                <div className="max-w-7xl mx-auto pb-10">{renderContent()}</div>
+            
+            {/* SCROLL FIX: 
+               - If it's a fixed view (like OfficerQueue with split panes), we hide the main scrollbar and let the component handle it.
+               - Otherwise, we use overflow-y-auto for standard vertical scrolling.
+            */}
+            <div className={`flex-1 w-full ${isFixedView ? 'overflow-hidden flex flex-col' : 'overflow-y-auto scroll-smooth'} p-4 md:p-8`}>
+                <div className={`max-w-7xl mx-auto ${!isFixedView ? 'pb-10' : 'h-full'}`}>
+                    {renderContent()}
+                </div>
             </div>
         </main>
     </div>
