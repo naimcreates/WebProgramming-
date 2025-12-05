@@ -40,7 +40,7 @@ const INITIAL_USERS = [
         email: 'alex.t@uni.edu', 
         password: '1234',
         status: 'Active', 
-        studentId: '0112230676',
+        studentId: '0112230676', 
         dept: 'Computer Science',
         batch: '223', 
         semester: '8th (Final)',
@@ -569,19 +569,19 @@ const CertificateView = ({ studentProfile, isCleared }) => {
 
     return (
         <div className="max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in duration-500">
-            {/* --- CERTIFICATE CONTAINER WITH DECORATIVE BORDER --- */}
-            <div className="bg-[#fdfbf7] p-10 md:p-20 rounded-sm shadow-2xl border-8 double border-slate-800 relative overflow-hidden text-center" style={{ fontFamily: 'Times New Roman, serif' }}>
+            {/* --- CERTIFICATE CONTAINER WITH DECORATIVE BORDER (CAPSULE STYLE) --- */}
+            <div className="bg-[#fdfbf7] p-10 md:p-20 rounded-[4rem] shadow-2xl border-8 double border-slate-800 relative overflow-hidden text-center" style={{ fontFamily: 'Times New Roman, serif' }}>
                 
                 {/* --- WATERMARK --- */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
                     <GraduationCap size={600} />
                 </div>
 
-                {/* --- CORNER DECORATIONS --- */}
-                <div className="absolute top-4 left-4 w-24 h-24 border-t-4 border-l-4 border-slate-800 rounded-tl-3xl"></div>
-                <div className="absolute top-4 right-4 w-24 h-24 border-t-4 border-r-4 border-slate-800 rounded-tr-3xl"></div>
-                <div className="absolute bottom-4 left-4 w-24 h-24 border-b-4 border-l-4 border-slate-800 rounded-bl-3xl"></div>
-                <div className="absolute bottom-4 right-4 w-24 h-24 border-b-4 border-r-4 border-slate-800 rounded-br-3xl"></div>
+                {/* --- CORNER DECORATIONS (CAPSULE STYLE ADJUSTMENTS) --- */}
+                <div className="absolute top-6 left-6 w-24 h-24 border-t-4 border-l-4 border-slate-800 rounded-tl-[3.5rem]"></div>
+                <div className="absolute top-6 right-6 w-24 h-24 border-t-4 border-r-4 border-slate-800 rounded-tr-[3.5rem]"></div>
+                <div className="absolute bottom-6 left-6 w-24 h-24 border-b-4 border-l-4 border-slate-800 rounded-bl-[3.5rem]"></div>
+                <div className="absolute bottom-6 right-6 w-24 h-24 border-b-4 border-r-4 border-slate-800 rounded-br-[3.5rem]"></div>
 
                 <div className="relative z-10 flex flex-col items-center">
                     
@@ -1070,8 +1070,9 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, h
           </div>
         </Card>
         
-        <Card className="p-8 flex flex-col justify-center items-center text-center border border-slate-200 hover:border-blue-300 h-full bg-gradient-to-b from-white to-blue-50/50 shadow-sm hover:shadow-md transition-all duration-300 group">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6 text-blue-600 shadow-inner group-hover:scale-110 transition-transform duration-300">
+        {/* --- UPDATED FINAL CLEARANCE CARD --- */}
+        <Card className="p-8 flex flex-col justify-center items-center text-center h-full bg-white border-2 border-blue-100 hover:border-blue-300 shadow-md hover:shadow-xl transition-all duration-300 group rounded-2xl relative overflow-hidden">
+          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 text-blue-600 shadow-md border border-blue-100 group-hover:scale-110 transition-transform duration-300">
              <GraduationCap size={40} />
           </div>
           <h3 className="text-xl font-bold text-slate-800 mb-2">Final Clearance</h3>
@@ -1081,7 +1082,7 @@ const StudentDashboard = ({ studentProfile, clearanceItems, emergencyRequests, h
              onClick={() => onNavigate('certificate')} 
              fullWidth
              variant={canDownload ? 'primary' : 'secondary'}
-             className={canDownload ? 'shadow-lg shadow-blue-200/50' : 'opacity-60 cursor-not-allowed'}
+             className={canDownload ? 'shadow-lg shadow-blue-200/50' : 'opacity-60 cursor-not-allowed bg-slate-50 border border-slate-200'}
           >
              {buttonText}
           </Button>
@@ -1468,7 +1469,8 @@ const OfficerQueue = ({ activeUser, clearanceItems, updateClearanceItem, addNoti
 
       <div className="flex flex-1 overflow-hidden bg-slate-50/50">
         {/* LEFT SIDE: QUEUE LIST */}
-        <Card className="w-1/3 flex flex-col rounded-none border-r border-t-0 border-b-0 border-l-0 shadow-none" noPadding>
+        {/* FIXED WIDTH TO AVOID GAP ISSUE: w-96 */}
+        <Card className="w-96 flex-shrink-0 flex flex-col rounded-none border-r border-t-0 border-b-0 border-l-0 shadow-none" noPadding>
             <div className="p-4 border-b border-slate-100 bg-white sticky top-0 z-10">
                 <div className="relative">
                     <input 
